@@ -1,0 +1,80 @@
+<!-- @dsCard group="Foundations" -->
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sello — Foundations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EFEDE4; --paper-2:#E5E2D6; --ink:#191814; --ink-2:#56534A; --faint:#918C7E;
+    --line:#CBC7B8; --spot:#9E3B2B;
+    --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/></svg>");
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Hanken Grotesk",system-ui,sans-serif;padding:56px 48px 80px;position:relative}
+  body::before{content:"";position:fixed;inset:0;background-image:var(--grain);opacity:.035;mix-blend-mode:multiply;pointer-events:none;z-index:0}
+  .wrap{max-width:900px;margin:0 auto;position:relative;z-index:1}
+  .rule{border:0;border-top:1px solid var(--ink);margin:0}
+  .rule.thin{border-top:1px solid var(--line)}
+  .kicker{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--spot);margin:0 0 14px}
+  h1{font-family:"Fraunces",serif;font-weight:600;font-size:64px;line-height:.98;margin:0 0 10px;letter-spacing:-.015em}
+  h1 em{font-style:italic;font-weight:400}
+  .lead{font-size:17px;color:var(--ink-2);max-width:54ch;margin:0 0 30px;line-height:1.5}
+  h2{font-family:"JetBrains Mono",monospace;font-weight:500;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);margin:48px 0 18px}
+  /* palette: flat strip, no boxes */
+  .pal{display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--ink)}
+  .pal .c{flex:1 1 16%;min-width:120px;border-right:1px solid var(--ink)}
+  .pal .c:last-child{border-right:0}
+  .pal .c .chip{height:88px}
+  .pal .c .m{padding:8px 10px;border-top:1px solid var(--ink);display:flex;justify-content:space-between;align-items:baseline}
+  .pal .c .nm{font-size:12px;font-weight:600}
+  .pal .c .hex{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--faint)}
+  /* type: ruled rows, no boxes */
+  .trow{display:grid;grid-template-columns:150px 1fr;gap:20px;align-items:baseline;padding:16px 0;border-bottom:1px solid var(--line)}
+  .trow .tag{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--faint)}
+  .fr{font-family:"Fraunces",serif}.hg{font-family:"Hanken Grotesk",sans-serif}.mo{font-family:"JetBrains Mono",monospace}
+  .princ{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--ink)}
+  .princ div{padding:18px 20px;border-right:1px solid var(--ink)}
+  .princ div:last-child{border-right:0}
+  .princ h3{font-family:"Fraunces",serif;font-weight:600;font-size:17px;margin:0 0 6px}
+  .princ p{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="kicker">Sistema de diseño · v0.2 · imprenta</p>
+  <h1>Sello <em>, lealtad impresa</em></h1>
+  <p class="lead">Un sistema plano, tipográfico y de papel. Sin sombras, sin cajas flotantes: líneas finas, aire y una sola tinta. La tarjeta de sellos manda; todo lo demás se aparta para dejarla respirar.</p>
+
+  <hr class="rule" />
+
+  <h2>Paleta — duotono + 1 tinta</h2>
+  <div class="pal">
+    <div class="c"><div class="chip" style="background:#EFEDE4"></div><div class="m"><span class="nm">paper</span><span class="hex">EFEDE4</span></div></div>
+    <div class="c"><div class="chip" style="background:#E5E2D6"></div><div class="m"><span class="nm">paper-2</span><span class="hex">E5E2D6</span></div></div>
+    <div class="c"><div class="chip" style="background:#191814"></div><div class="m"><span class="nm">ink</span><span class="hex">191814</span></div></div>
+    <div class="c"><div class="chip" style="background:#56534A"></div><div class="m"><span class="nm">ink-2</span><span class="hex">56534A</span></div></div>
+    <div class="c"><div class="chip" style="background:#CBC7B8"></div><div class="m"><span class="nm">line</span><span class="hex">CBC7B8</span></div></div>
+    <div class="c"><div class="chip" style="background:#9E3B2B"></div><div class="m"><span class="nm">spot</span><span class="hex">9E3B2B</span></div></div>
+  </div>
+
+  <h2>Tipografía</h2>
+  <div class="trow"><span class="tag">Display · Fraunces</span><span class="fr" style="font-size:46px;font-weight:600;letter-spacing:-.015em">Volvé por tu premio</span></div>
+  <div class="trow"><span class="tag">Serif itálica</span><span class="fr" style="font-size:28px;font-style:italic;font-weight:400">tu lugar, tu hábito</span></div>
+  <div class="trow"><span class="tag">Cuerpo · Hanken</span><span class="hg" style="font-size:16px">Sumá un sello en cada visita. Cuando completás la tarjeta, te avisamos — sin apps, sin vueltas.</span></div>
+  <div class="trow" style="border-bottom:0"><span class="tag">Mono · numerales</span><span class="mo" style="font-size:24px;font-weight:700;letter-spacing:.05em">07 / 10 · #A4F9</span></div>
+
+  <h2>Principios</h2>
+  <div class="princ">
+    <div><h3>Sin sombras</h3><p>Nada flota. La jerarquía se construye con tamaño, peso y líneas finas — no con elevación.</p></div>
+    <div><h3>Menos cajas</h3><p>El contenido se separa con reglas y espacio. Solo la tarjeta de sellos tiene borde, porque es un objeto real.</p></div>
+    <div><h3>Una sola tinta</h3><p>Negro sobre papel y un rojo imprenta usado con cuentagotas. Sin paletas multicolor.</p></div>
+  </div>
+</div>
+</body>
+</html>

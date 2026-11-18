@@ -1,0 +1,105 @@
+<!-- @dsCard group="Screens" -->
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sello — Tarjeta del cliente (móvil)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,600&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EFEDE4; --paper-2:#E5E2D6; --ink:#191814; --ink-2:#56534A; --faint:#918C7E;
+    --line:#CBC7B8; --spot:#9E3B2B;
+    --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/></svg>");
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#D7D3C6;font-family:"Hanken Grotesk",sans-serif;color:var(--ink);min-height:100vh;display:grid;place-items:center;padding:30px}
+  .phone{width:390px;background:var(--paper);border:1px solid var(--ink);border-radius:30px;padding:12px;position:relative}
+  .screen{background:var(--paper);border:1px solid var(--line);border-radius:22px;overflow:hidden;position:relative}
+  .screen::before{content:"";position:absolute;inset:0;background-image:var(--grain);opacity:.035;mix-blend-mode:multiply;pointer-events:none;z-index:5}
+  .notch{height:22px;display:grid;place-items:center}
+  .notch span{width:110px;height:5px;border-radius:999px;background:#0002}
+  .pad{padding:4px 22px 26px;position:relative;z-index:2}
+  .topbar{display:flex;align-items:center;gap:10px;padding:8px 0 16px;border-bottom:1px solid var(--line);margin-bottom:18px}
+  .logo{width:34px;height:34px;border:1px solid var(--ink);border-radius:3px;display:grid;place-items:center;font-family:"Fraunces",serif;font-weight:600;font-size:18px}
+  .topbar .nm{font-family:"Fraunces",serif;font-weight:600;font-size:16px;line-height:1.05}
+  .topbar .sub{font-size:11px;color:var(--faint)}
+  .hello{font-family:"Fraunces",serif;font-size:30px;font-weight:600;margin:4px 0 2px;letter-spacing:-.01em}
+  .hello em{font-style:italic;font-weight:400;color:var(--spot)}
+  .sub2{font-size:13.5px;color:var(--ink-2);margin:0 0 22px;line-height:1.45}
+
+  .scard{border:1px solid var(--ink);border-radius:3px;overflow:hidden;position:relative}
+  .scard::after{content:"";position:absolute;inset:0;background-image:var(--grain);opacity:.03;mix-blend-mode:multiply;pointer-events:none}
+  .sc-top{padding:16px 18px 10px}
+  .reward{font-family:"Fraunces",serif;font-size:18px;font-weight:600;margin:0}
+  .reward em{font-style:italic;font-weight:400;color:var(--spot)}
+  .prog{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--faint);margin-top:4px}
+  .perf{border-top:1px dashed var(--ink);margin:0}
+  .stamps{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:16px 18px}
+  .stamp{aspect-ratio:1;border-radius:999px;display:grid;place-items:center;position:relative}
+  .stamp.empty{border:1px dashed var(--line);color:var(--line);font-family:"JetBrains Mono",monospace;font-size:12px}
+  .stamp.on{background:var(--spot);color:var(--paper);transform:rotate(var(--rot,-4deg))}
+  .stamp.on svg{width:50%;height:50%}
+  .stamp.on::before{content:"";position:absolute;inset:0;border-radius:inherit;background-image:var(--grain);opacity:.22;mix-blend-mode:screen}
+  .stamp.next{border:1px solid var(--spot);color:var(--spot);font-weight:700;font-family:"JetBrains Mono",monospace}
+
+  .qr{margin:26px 0 8px;text-align:center}
+  .qr .ttl{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+  .qrbox{width:166px;height:166px;margin:12px auto;border:1px solid var(--ink);background:
+    conic-gradient(from 0deg,#191814 0 25%,transparent 0 50%,#191814 0 75%,transparent 0 100%) 0 0/15px 15px,var(--paper);position:relative;overflow:hidden}
+  .qrbox::after{content:"";position:absolute;inset:40px;background:var(--paper);border:3px solid var(--ink)}
+  .qr .code{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:18px;letter-spacing:.16em}
+  .divider{display:flex;align-items:center;gap:12px;margin:22px 0 14px;color:var(--faint)}
+  .divider::before,.divider::after{content:"";flex:1;border-top:1px solid var(--line)}
+  .divider span{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+  .tip{font-size:12.5px;color:var(--ink-2);line-height:1.45;margin:0 0 16px}
+  .add{width:100%;border:1px solid var(--ink);border-radius:3px;background:var(--ink);color:var(--paper);font-family:"Hanken Grotesk";font-weight:600;font-size:14px;padding:12px;cursor:pointer;display:flex;gap:8px;justify-content:center;align-items:center}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="screen">
+    <div class="notch"><span></span></div>
+    <div class="pad">
+      <div class="topbar">
+        <div class="logo">R</div>
+        <div><div class="nm">Yogur Griego Rey</div><div class="sub">Tu tarjeta · Puerto Madryn</div></div>
+      </div>
+
+      <h1 class="hello">Hola, <em>Sofía</em></h1>
+      <p class="sub2">Te faltan 3 sellos para tu próximo pote gratis.</p>
+
+      <div class="scard">
+        <div class="sc-top">
+          <p class="reward">Comprá 10, el 11 es <em>nuestro</em></p>
+          <p class="prog">7 / 10 sellos</p>
+        </div>
+        <hr class="perf"/>
+        <div class="stamps">
+          <div class="stamp on" style="--rot:-6deg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.3L21 9l-5 4.2L17.5 20 12 16.4 6.5 20 8 13.2 3 9l6.4-.7z"/></svg></div>
+          <div class="stamp on" style="--rot:5deg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.3L21 9l-5 4.2L17.5 20 12 16.4 6.5 20 8 13.2 3 9l6.4-.7z"/></svg></div>
+          <div class="stamp on" style="--rot:-3deg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.3L21 9l-5 4.2L17.5 20 12 16.4 6.5 20 8 13.2 3 9l6.4-.7z"/></svg></div>
+          <div class="stamp on" style="--rot:6deg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.3L21 9l-5 4.2L17.5 20 12 16.4 6.5 20 8 13.2 3 9l6.4-.7z"/></svg></div>
+          <div class="stamp on" style="--rot:-5deg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.3L21 9l-5 4.2L17.5 20 12 16.4 6.5 20 8 13.2 3 9l6.4-.7z"/></svg></div>
+          <div class="stamp on" style="--rot:4deg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.3L21 9l-5 4.2L17.5 20 12 16.4 6.5 20 8 13.2 3 9l6.4-.7z"/></svg></div>
+          <div class="stamp on" style="--rot:-4deg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.3L21 9l-5 4.2L17.5 20 12 16.4 6.5 20 8 13.2 3 9l6.4-.7z"/></svg></div>
+          <div class="stamp next">8</div><div class="stamp empty">9</div><div class="stamp empty">10</div>
+        </div>
+      </div>
+
+      <div class="qr">
+        <div class="ttl">Mostrá este código en la caja</div>
+        <div class="qrbox"></div>
+        <div class="code">A4F9-21</div>
+      </div>
+
+      <div class="divider"><span>sin apps</span></div>
+      <p class="tip">Guardá esta página en tu pantalla de inicio y la abrís al toque. No hace falta instalar nada.</p>
+      <button class="add"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Agregar a inicio</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
