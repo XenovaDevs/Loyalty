@@ -1,0 +1,5 @@
+# Caddy saca y renueva el certificado TLS solo (Let's Encrypt).
+# {$DOMAIN} viene de la variable de entorno del contenedor.
+{$DOMAIN} {
+	reverse_proxy app:4000
+}

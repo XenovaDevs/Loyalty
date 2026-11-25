@@ -1,5 +1,5 @@
 // Sello — modelo de fidelización multi-comercio (event-sourced).
-// Dev: SQLite (sin servidor). Prod: Postgres (reintroducir enums allí si se quiere).
+// Base: PostgreSQL (dev y prod). Los "enums" se guardan como String por simplicidad.
 // El saldo de sellos/puntos NUNCA se guarda como contador mutable:
 // se deriva sumando los LoyaltyEvent de cada Membership.
 
@@ -8,7 +8,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
