@@ -62,7 +62,15 @@ export function NewCustomer({ programs }: { programs: ProgramOption[] }) {
         ) : (
           <form ref={formRef} action={action} className="flex flex-col gap-5">
             <Field label="Nombre" name="name" required placeholder="Sofía Martínez" />
-            <Field label="Teléfono (opcional)" name="phone" placeholder="280 415-2290" />
+            <Field
+              label="Teléfono"
+              name="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="off"
+              required
+              placeholder="280 415-2290"
+            />
             <label className="block">
               <span className="mb-2 block font-mono text-[10px] uppercase tracking-[0.14em] text-faint">
                 Programa

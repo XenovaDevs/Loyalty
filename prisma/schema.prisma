@@ -149,6 +149,8 @@ model Customer {
   businessId String
   name       String
   phone      String?
+  // Teléfono normalizado (src/lib/phone.ts): una tarjeta por cliente por comercio.
+  phoneKey   String?
   email      String?
   code       String @unique // código corto para QR/caja; único globalmente (la URL pública /t/[code] no lleva comercio)
   createdAt  DateTime @default(now())
@@ -158,6 +160,7 @@ model Customer {
   subscriptions PushSubscription[]
 
   @@unique([businessId, code])
+  @@unique([businessId, phoneKey])
   @@index([businessId])
 }
 

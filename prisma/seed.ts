@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "better-auth/crypto";
 import { customerCode, slugify } from "../src/lib/ids";
+import { phoneKey } from "../src/lib/phone";
 
 const prisma = new PrismaClient();
 
@@ -108,6 +109,7 @@ async function main() {
         businessId: business.id,
         name: d.name,
         phone: d.phone,
+        phoneKey: phoneKey(d.phone),
         code: customerCode(),
       },
     });
