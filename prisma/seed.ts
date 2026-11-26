@@ -4,7 +4,8 @@ import { customerCode, slugify } from "../src/lib/ids";
 
 const prisma = new PrismaClient();
 
-const OWNER_EMAIL = "admin@sello.test";
+const OWNER_USERNAME = "demo";
+const OWNER_EMAIL = "demo@sin-email.invalid"; // interno: el login es por usuario
 const OWNER_PASSWORD = "password123";
 
 async function main() {
@@ -42,6 +43,8 @@ async function main() {
   const owner = await prisma.user.create({
     data: {
       name: "Rey",
+      username: OWNER_USERNAME,
+      displayUsername: OWNER_USERNAME,
       email: OWNER_EMAIL,
       emailVerified: true,
       role: "OWNER",
@@ -153,7 +156,7 @@ async function main() {
 
   console.log("✔ Seed listo.");
   console.log(`  Comercio: ${business.name}`);
-  console.log(`  Login:    ${OWNER_EMAIL} / ${OWNER_PASSWORD}`);
+  console.log(`  Login:    ${OWNER_USERNAME} / ${OWNER_PASSWORD}`);
 }
 
 main()

@@ -41,7 +41,19 @@ export function NewStaff() {
         </div>
         <form ref={formRef} action={action} className="flex flex-col gap-5">
           <Field label="Nombre" name="name" required />
-          <Field label="Email" name="email" type="email" required />
+          <Field
+            label="Usuario"
+            name="username"
+            autoComplete="off"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            minLength={3}
+            maxLength={30}
+            pattern="@?[A-Za-z0-9_.]{3,30}"
+            title="3 a 30 caracteres: letras, números, punto o guion bajo"
+            required
+          />
           <Field
             label="Contraseña (8+)"
             name="password"
@@ -50,7 +62,7 @@ export function NewStaff() {
             required
           />
           <p className="text-[12px] text-faint">
-            El empleado podrá entrar al scanner con este email y contraseña.
+            El empleado podrá entrar al scanner con este usuario y contraseña.
           </p>
           {state?.error && <p className="text-sm text-spot">{state.error}</p>}
           <button disabled={pending} className={`${buttonCls("spot")} mt-1`}>

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/ids";
+import { normalizeUsername, internalEmail, USERNAME_HINT } from "@/lib/usernames";
 
 export type AuthState = { error?: string } | undefined;
 
@@ -15,24 +16,29 @@ export async function signUpOwner(
 ): Promise<AuthState> {
   const name = String(formData.get("name") ?? "").trim();
   const businessName = String(formData.get("business") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const rawUsername = String(formData.get("username") ?? "");
   const password = String(formData.get("password") ?? "");
 
-  if (!name || !businessName || !email || password.length < 8) {
+  if (!name || !businessName || !rawUsername || password.length < 8) {
     return { error: "Completá todos los campos (contraseña de 8+ caracteres)." };
+  }
+  const username = normalizeUsername(rawUsername);
+  if (!username) return { error: USERNAME_HINT };
+  if (await prisma.user.findUnique({ where: { username } })) {
+    return { error: "Ese usuario ya existe. Elegí otro." };
   }
 
   try {
     await auth.api.signUpEmail({
-      body: { name, email, password },
+      body: { name, email: internalEmail(), password, username },
       headers: await headers(),
     });
   } catch {
-    return { error: "Ese email ya está registrado o es inválido." };
+    return { error: "No se pudo crear la cuenta. Probá con otro usuario." };
   }
 
   // Asociar el comercio al usuario recién creado.
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({ where: { username } });
   if (!user) return { error: "No se pudo crear la cuenta." };
 
   let slug = slugify(businessName) || "comercio";

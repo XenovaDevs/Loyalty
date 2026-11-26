@@ -41,8 +41,11 @@ model Business {
 model User {
   id            String   @id @default(cuid())
   name          String
-  email         String   @unique
+  email         String   @unique // interno y aleatorio (@sin-email.invalid): el login es por usuario
   emailVerified Boolean  @default(false)
+  // Login por usuario (plugin `username` de Better Auth). Guardado en minúsculas.
+  username        String? @unique
+  displayUsername String?
   image         String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

@@ -11,7 +11,7 @@ export default async function EquipoPage() {
   const team = await prisma.user.findMany({
     where: { businessId },
     orderBy: [{ role: "asc" }, { createdAt: "asc" }],
-    select: { id: true, name: true, email: true, role: true },
+    select: { id: true, name: true, username: true, role: true },
   });
 
   return (
@@ -34,7 +34,7 @@ export default async function EquipoPage() {
                   {m.role === "OWNER" ? "Dueño" : "Empleado"}
                 </Badge>
               </div>
-              <p className="mt-0.5 font-mono text-[12px] text-faint">{m.email}</p>
+              <p className="mt-0.5 font-mono text-[12px] text-faint">{m.username ? `@${m.username}` : "sin usuario"}</p>
             </div>
             {owner && m.role === "STAFF" && <RemoveStaff id={m.id} />}
           </div>

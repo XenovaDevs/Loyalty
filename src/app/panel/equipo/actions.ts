@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { hashPassword } from "better-auth/crypto";
 import { prisma } from "@/lib/prisma";
 import { requireBusiness, isOwner } from "@/lib/tenant";
+import { normalizeUsername, internalEmail, USERNAME_HINT } from "@/lib/usernames";
 
 export type FormResult = { error?: string; ok?: boolean } | undefined;
 
@@ -15,17 +16,27 @@ export async function createStaff(
   if (!isOwner(user)) return { error: "Solo el dueño puede crear empleados." };
 
   const name = String(formData.get("name") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const rawUsername = String(formData.get("username") ?? "");
   const password = String(formData.get("password") ?? "");
 
-  if (!name || !email || password.length < 8)
+  if (!name || !rawUsername || password.length < 8)
     return { error: "Completá todo (contraseña de 8+ caracteres)." };
+  const username = normalizeUsername(rawUsername);
+  if (!username) return { error: USERNAME_HINT };
 
-  const clash = await prisma.user.findUnique({ where: { email } });
-  if (clash) return { error: "Ese email ya está en uso." };
+  const clash = await prisma.user.findUnique({ where: { username } });
+  if (clash) return { error: "Ese usuario ya existe. Elegí otro." };
 
   const staff = await prisma.user.create({
-    data: { name, email, emailVerified: true, role: "STAFF", businessId },
+    data: {
+      name,
+      username,
+      displayUsername: username,
+      email: internalEmail(),
+      emailVerified: true,
+      role: "STAFF",
+      businessId,
+    },
   });
   await prisma.account.create({
     data: {

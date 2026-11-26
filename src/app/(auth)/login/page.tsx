@@ -15,13 +15,13 @@ export default function LoginPage() {
     setError(null);
     setPending(true);
     const fd = new FormData(e.currentTarget);
-    const { error } = await signIn.email({
-      email: String(fd.get("email")).toLowerCase().trim(),
+    const { error } = await signIn.username({
+      username: String(fd.get("username")).toLowerCase().trim().replace(/^@/, ""),
       password: String(fd.get("password")),
     });
     setPending(false);
     if (error) {
-      setError("Email o contraseña incorrectos.");
+      setError("Usuario o contraseña incorrectos.");
       return;
     }
     router.push("/panel");
@@ -41,7 +41,14 @@ export default function LoginPage() {
       </p>
 
       <form onSubmit={onSubmit} className="flex flex-col gap-5">
-        <Field label="Email" name="email" type="email" autoComplete="email" />
+        <Field
+          label="Usuario"
+          name="username"
+          autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+        />
         <Field
           label="Contraseña"
           name="password"

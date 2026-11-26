@@ -25,7 +25,18 @@ export default function SignupPage() {
       <form action={action} className="flex flex-col gap-5">
         <Field label="Tu nombre" name="name" autoComplete="name" />
         <Field label="Nombre del comercio" name="business" />
-        <Field label="Email" name="email" type="email" autoComplete="email" />
+        <Field
+          label="Usuario"
+          name="username"
+          autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          minLength={3}
+          maxLength={30}
+          pattern="@?[A-Za-z0-9_.]{3,30}"
+          title="3 a 30 caracteres: letras, números, punto o guion bajo"
+        />
         <Field
           label="Contraseña"
           name="password"
