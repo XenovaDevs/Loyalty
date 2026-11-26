@@ -19,7 +19,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sello — fidelización",
+  title: "Loyalty — fidelización",
   description:
     "Tarjetas de fidelización con alma de papel. Sumá sellos, volvé por tu premio.",
 };

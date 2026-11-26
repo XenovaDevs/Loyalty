@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { LogoutButton } from "@/components/logout-button";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { Logo } from "@/components/logo";
 import { Nav } from "./nav";
 
 export default async function PanelLayout({
@@ -14,16 +15,7 @@ export default async function PanelLayout({
     ? await prisma.business.findUnique({ where: { id: user.businessId } })
     : null;
 
-  const initial = (business?.name ?? "S").charAt(0).toUpperCase();
-
-  const brand = (
-    <div className="flex items-center gap-2.5">
-      <div className="grid size-8 shrink-0 place-items-center rounded-[var(--radius)] border border-ink font-display text-base font-semibold">
-        {initial}
-      </div>
-      <div className="font-display text-lg font-semibold">Sello</div>
-    </div>
-  );
+  const brand = <Logo size={22} />;
 
   return (
     <div className="relative z-10 min-h-dvh md:grid md:grid-cols-[220px_1fr]">

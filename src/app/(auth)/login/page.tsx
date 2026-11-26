@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "@/lib/auth-client";
+import { Logo } from "@/components/logo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,8 +31,11 @@ export default function LoginPage() {
 
   return (
     <main className="relative z-10 mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6">
+      <div className="mb-8">
+        <Logo size={34} />
+      </div>
       <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-spot">
-        Sello · panel
+        Loyalty · panel
       </p>
       <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">
         Entrar

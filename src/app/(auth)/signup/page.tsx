@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { signUpOwner, type AuthState } from "../actions";
+import { Logo } from "@/components/logo";
 
 export default function SignupPage() {
   const [state, action, pending] = useActionState<AuthState, FormData>(
@@ -12,8 +13,11 @@ export default function SignupPage() {
 
   return (
     <main className="relative z-10 mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6 py-12">
+      <div className="mb-8">
+        <Logo size={34} />
+      </div>
       <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-spot">
-        Sello · nuevo comercio
+        Loyalty · nuevo comercio
       </p>
       <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">
         Creá tu comercio
