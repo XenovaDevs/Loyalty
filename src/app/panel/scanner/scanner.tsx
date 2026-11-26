@@ -50,19 +50,23 @@ export function Scanner() {
   return (
     <div className="mt-8 grid max-w-xl gap-6">
       <form onSubmit={onLookup} className="flex items-end gap-3">
-        <label className="flex-1">
+        <label className="min-w-0 flex-1">
           <span className="mb-2 block font-mono text-[10px] uppercase tracking-[0.14em] text-faint">
             Código del cliente
           </span>
           <input
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="A4F9-21"
+            placeholder="A4F9-21KX"
             autoFocus
+            autoCapitalize="characters"
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck={false}
             className="w-full border-0 border-b border-ink bg-transparent py-2 font-mono text-lg tracking-[0.1em] outline-none focus:border-spot"
           />
         </label>
-        <button disabled={pending || !code} className={buttonCls("ink")}>
+        <button disabled={pending || !code} className={`${buttonCls("ink")} shrink-0`}>
           Buscar
         </button>
       </form>
@@ -75,19 +79,23 @@ export function Scanner() {
 
       {result?.found && (
         <div className="border border-ink">
-          <div className="flex items-center justify-between border-b border-line p-4">
-            <div className="font-display text-xl font-semibold">
-              {result.customerName}
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line p-4">
+            <div className="min-w-0">
+              <div className="font-display text-xl font-semibold leading-snug">
+                {result.customerName}
+              </div>
+              <span className="whitespace-nowrap font-mono text-xs text-faint">
+                #{result.code}
+              </span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-3">
               <button
                 disabled={pending}
                 onClick={onTestPush}
-                className="rounded-[var(--radius)] border border-ink px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] disabled:opacity-60 hover:bg-paper-2"
+                className="whitespace-nowrap rounded-[var(--radius)] border border-ink px-3 py-2 font-mono text-[11px] uppercase tracking-[0.1em] disabled:opacity-60 hover:bg-paper-2"
               >
                 Probar aviso
               </button>
-              <span className="font-mono text-xs text-faint">#{result.code}</span>
             </div>
           </div>
 

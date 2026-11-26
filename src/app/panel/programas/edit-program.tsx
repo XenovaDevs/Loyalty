@@ -46,7 +46,7 @@ export function EditProgram(p: Props) {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-ink/30 p-4">
-      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto border border-ink bg-paper p-6">
+      <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto border border-ink bg-paper p-5 sm:p-6">
         <div className="mb-4 flex items-baseline justify-between border-b border-line pb-3">
           <h2 className="font-display text-xl font-semibold">Editar programa</h2>
           <button

@@ -24,6 +24,30 @@ export default async function ClientesPage() {
     }),
   ]);
 
+  const rows = customers.map((c) => {
+    const stampM = c.memberships.find((m) => m.program.type === "STAMPS");
+    const prog = stampM ? progressOf(stampM) : null;
+    const pointsM = c.memberships.find(
+      (m) => m.program.type === "VISIT" || m.program.type === "POINTS",
+    );
+    const points = pointsM
+      ? deriveBalance(
+          pointsM.events.map((e) => ({
+            type: e.type as EventType,
+            amount: e.amount as unknown as number,
+          })),
+        )
+      : null;
+    return {
+      id: c.id,
+      name: c.name,
+      phone: c.phone ?? "—",
+      code: c.code,
+      stamps: prog ? (prog.isComplete ? "¡premio!" : `${prog.filled}/${prog.required}`) : "—",
+      points: points != null ? points.toLocaleString("es-AR") : "—",
+    };
+  });
+
   return (
     <>
       <PageHeader
@@ -37,52 +61,64 @@ export default async function ClientesPage() {
           Todavía no hay clientes. Creá uno y empezá a darle sellos.
         </p>
       ) : (
-        <table className="mt-6 w-full border-collapse">
-          <thead>
-            <tr className="text-left font-mono text-[10px] uppercase tracking-[0.13em] text-faint">
-              <th className="border-b border-ink py-2.5">Cliente</th>
-              <th className="border-b border-ink py-2.5">Teléfono</th>
-              <th className="border-b border-ink py-2.5">Sellos</th>
-              <th className="border-b border-ink py-2.5">Puntos</th>
-              <th className="border-b border-ink py-2.5">Código</th>
-              <th className="border-b border-ink py-2.5">Tarjeta</th>
-            </tr>
-          </thead>
-          <tbody>
-            {customers.map((c) => {
-              const stampM = c.memberships.find((m) => m.program.type === "STAMPS");
-              const prog = stampM ? progressOf(stampM) : null;
-              const pointsM = c.memberships.find(
-                (m) => m.program.type === "VISIT" || m.program.type === "POINTS",
-              );
-              const points = pointsM
-                ? deriveBalance(
-                    pointsM.events.map((e) => ({
-                      type: e.type as EventType,
-                      amount: e.amount as unknown as number,
-                    })),
-                  )
-                : null;
-              return (
-                <tr key={c.id} className="text-sm">
-                  <td className="border-b border-line py-3">{c.name}</td>
-                  <td className="border-b border-line py-3 text-ink-2">
-                    {c.phone ?? "—"}
-                  </td>
-                  <td className="border-b border-line py-3 font-mono">
-                    {prog
-                      ? prog.isComplete
-                        ? "¡premio!"
-                        : `${prog.filled}/${prog.required}`
-                      : "—"}
-                  </td>
-                  <td className="border-b border-line py-3 font-mono">
-                    {points != null ? `${points.toLocaleString("es-AR")}` : "—"}
-                  </td>
-                  <td className="border-b border-line py-3 font-mono">#{c.code}</td>
+        <>
+          {/* Celular: una tarjeta por cliente. */}
+          <ul className="mt-4 divide-y divide-line border-b border-line md:hidden">
+            {rows.map((r) => (
+              <li key={r.id} className="py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-semibold">{r.name}</div>
+                    <div className="mt-0.5 text-sm text-ink-2">{r.phone}</div>
+                  </div>
+                  <span className="shrink-0 font-mono text-sm">#{r.code}</span>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <div className="flex gap-5 font-mono text-[13px]">
+                    <span>
+                      <span className="text-faint">Sellos </span>
+                      {r.stamps}
+                    </span>
+                    <span>
+                      <span className="text-faint">Puntos </span>
+                      {r.points}
+                    </span>
+                  </div>
+                  <Link
+                    href={`/t/${r.code}`}
+                    target="_blank"
+                    className="-my-2 shrink-0 py-2 font-mono text-[12px] text-spot"
+                  >
+                    ver tarjeta →
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          {/* Escritorio: tabla. */}
+          <table className="mt-6 hidden w-full border-collapse md:table">
+            <thead>
+              <tr className="text-left font-mono text-[10px] uppercase tracking-[0.13em] text-faint">
+                <th className="border-b border-ink py-2.5">Cliente</th>
+                <th className="border-b border-ink py-2.5">Teléfono</th>
+                <th className="border-b border-ink py-2.5">Sellos</th>
+                <th className="border-b border-ink py-2.5">Puntos</th>
+                <th className="border-b border-ink py-2.5">Código</th>
+                <th className="border-b border-ink py-2.5">Tarjeta</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id} className="text-sm">
+                  <td className="border-b border-line py-3">{r.name}</td>
+                  <td className="border-b border-line py-3 text-ink-2">{r.phone}</td>
+                  <td className="border-b border-line py-3 font-mono">{r.stamps}</td>
+                  <td className="border-b border-line py-3 font-mono">{r.points}</td>
+                  <td className="border-b border-line py-3 font-mono">#{r.code}</td>
                   <td className="border-b border-line py-3">
                     <Link
-                      href={`/t/${c.code}`}
+                      href={`/t/${r.code}`}
                       target="_blank"
                       className="font-mono text-[11px] text-spot"
                     >
@@ -90,10 +126,10 @@ export default async function ClientesPage() {
                     </Link>
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        </>
       )}
     </>
   );

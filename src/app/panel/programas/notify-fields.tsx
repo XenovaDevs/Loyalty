@@ -11,7 +11,7 @@ type Props = {
 };
 
 const inputCls =
-  "w-full border-0 border-b border-ink bg-transparent py-2 text-[15px] outline-none focus:border-spot";
+  "w-full border-0 border-b border-ink bg-transparent py-2 text-base outline-none md:text-[15px] focus:border-spot";
 const labelCls =
   "mb-2 block font-mono text-[10px] uppercase tracking-[0.14em] text-faint";
 

@@ -10,14 +10,14 @@ export function PageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-end justify-between border-b border-ink pb-4">
-      <div>
+    <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3 border-b border-ink pb-4">
+      <div className="min-w-0">
         <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-spot">
           {kicker}
         </p>
-        <h1 className="font-display text-3xl font-semibold">{title}</h1>
+        <h1 className="font-display text-[1.75rem] font-semibold leading-tight md:text-3xl">{title}</h1>
       </div>
-      {action}
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }
@@ -33,7 +33,7 @@ export function Field({
       </span>
       <input
         {...props}
-        className="w-full border-0 border-b border-ink bg-transparent py-2 text-[15px] outline-none focus:border-spot"
+        className="w-full rounded-none border-0 border-b border-ink bg-transparent py-2 text-base outline-none focus:border-spot md:text-[15px]"
       />
     </label>
   );

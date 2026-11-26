@@ -30,7 +30,7 @@ export function NewCustomer({ programs }: { programs: ProgramOption[] }) {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-ink/30 p-4">
-      <div className="w-full max-w-md border border-ink bg-paper p-6">
+      <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto border border-ink bg-paper p-5 sm:p-6">
         <div className="mb-4 flex items-baseline justify-between border-b border-line pb-3">
           <h2 className="font-display text-xl font-semibold">Nuevo cliente</h2>
           <button
@@ -77,7 +77,7 @@ export function NewCustomer({ programs }: { programs: ProgramOption[] }) {
               </span>
               <select
                 name="programId"
-                className="w-full border-0 border-b border-ink bg-transparent py-2 text-[15px] outline-none focus:border-spot"
+                className="w-full border-0 border-b border-ink bg-transparent py-2 text-base outline-none md:text-[15px] focus:border-spot"
               >
                 <option value="">— Sin inscribir —</option>
                 {programs.map((p) => (

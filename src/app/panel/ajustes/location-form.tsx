@@ -87,7 +87,7 @@ export function LocationForm(initial: Props) {
             value={mapsUrl}
             onChange={(e) => setMapsUrl(e.target.value)}
             placeholder="https://maps.app.goo.gl/…"
-            className="w-full border-0 border-b border-ink bg-transparent py-2 text-[15px] outline-none focus:border-spot"
+            className="w-full border-0 border-b border-ink bg-transparent py-2 text-base outline-none md:text-[15px] focus:border-spot"
           />
         </label>
         <button
@@ -134,7 +134,7 @@ export function LocationForm(initial: Props) {
             name="latitude"
             defaultValue={initial.latitude ?? ""}
             disabled={mapsUrl.trim() !== ""}
-            className="w-full border-0 border-b border-ink bg-transparent py-2 font-mono text-[15px] outline-none focus:border-spot disabled:opacity-50"
+            className="w-full border-0 border-b border-ink bg-transparent py-2 font-mono text-base outline-none md:text-[15px] focus:border-spot disabled:opacity-50"
           />
         </label>
         <label className="block">
@@ -146,7 +146,7 @@ export function LocationForm(initial: Props) {
             name="longitude"
             defaultValue={initial.longitude ?? ""}
             disabled={mapsUrl.trim() !== ""}
-            className="w-full border-0 border-b border-ink bg-transparent py-2 font-mono text-[15px] outline-none focus:border-spot disabled:opacity-50"
+            className="w-full border-0 border-b border-ink bg-transparent py-2 font-mono text-base outline-none md:text-[15px] focus:border-spot disabled:opacity-50"
           />
         </label>
       </div>

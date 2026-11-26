@@ -75,7 +75,7 @@ function Field({
       <input
         {...props}
         required
-        className="w-full border-0 border-b border-ink bg-transparent py-2 text-[15px] outline-none focus:border-spot"
+        className="w-full border-0 border-b border-ink bg-transparent py-2 text-base outline-none md:text-[15px] focus:border-spot"
       />
     </label>
   );
