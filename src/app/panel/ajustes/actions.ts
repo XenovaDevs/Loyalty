@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireBusiness, isOwner } from "@/lib/tenant";
-import { parseGoogleMapsCoords, isShortMapsUrl, type Coords } from "@/lib/maps";
+import {
+  parseGoogleMapsCoords,
+  isShortMapsUrl,
+  isGoogleMapsHost,
+  type Coords,
+} from "@/lib/maps";
 
 export type FormResult = { error?: string; ok?: boolean } | undefined;
 
@@ -27,27 +32,49 @@ async function coordsFromMapsUrl(input: string): Promise<Coords | null> {
 
   // Solo seguimos links ACORTADOS de Google (maps.app.goo.gl / goo.gl). No
   // hacemos fetch de URLs arbitrarias: evita SSRF a hosts internos y cuelgues.
-  if (isShortMapsUrl(s)) {
+  // Las redirecciones se siguen A MANO y cada salto se valida contra la lista
+  // de hosts de Google: `redirect: "follow"` dejaría que un 30x nos lleve a
+  // cualquier lado (incluida la red interna del server).
+  if (!isShortMapsUrl(s)) return null;
+
+  let url = s;
+  for (let hop = 0; hop < 5; hop++) {
+    if (!isGoogleMapsHost(url)) return null;
+    let res: Response;
     try {
-      const res = await fetch(s, {
-        redirect: "follow",
+      res = await fetch(url, {
+        redirect: "manual",
         headers: { "User-Agent": "Mozilla/5.0" },
         signal: AbortSignal.timeout(5000), // no colgar un slot del servidor
       });
-      return (
-        parseGoogleMapsCoords(res.url) ??
-        parseGoogleMapsCoords(await res.text())
-      );
     } catch {
       return null;
     }
+
+    const location = res.headers.get("location");
+    if (res.status >= 300 && res.status < 400 && location) {
+      const next = new URL(location, url).toString();
+      const coords = parseGoogleMapsCoords(next);
+      if (coords) return coords;
+      url = next;
+      continue;
+    }
+
+    if (!res.ok) return null;
+    // Leemos como mucho ~512 KB del cuerpo (solo de hosts de Google).
+    const body = (await res.text()).slice(0, 512 * 1024);
+    return parseGoogleMapsCoords(body);
   }
   return null;
 }
 
 /** Resuelve coordenadas desde un link de Google Maps (para el botón del formulario). */
-export async function resolveMapsUrl(url: string): Promise<ResolveResult> {
-  await requireBusiness();
+export async function resolveMapsUrl(url: unknown): Promise<ResolveResult> {
+  const { user } = await requireBusiness();
+  // La ubicación del local solo la cambia el dueño (igual que updateLocation).
+  if (!isOwner(user)) return { ok: false, error: "Solo el dueño puede cambiar la ubicación." };
+  if (typeof url !== "string" || url.length > 2048)
+    return { ok: false, error: "Link inválido." };
   if (!url.trim()) return { ok: false, error: "Pegá un link de Google Maps." };
   const coords = await coordsFromMapsUrl(url);
   if (!coords)

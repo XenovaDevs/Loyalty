@@ -36,6 +36,16 @@ export function hourInBusinessTz(now: Date = new Date()): number {
   return Number(h) % 24; // algunos runtimes devuelven "24" a medianoche
 }
 
+/** Fecha "YYYY-MM-DD" en la zona del negocio (para límites diarios). */
+export function dayKeyInBusinessTz(d: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: BUSINESS_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
 /** ¿La hora actual (en la zona del negocio) cae dentro del horario de apertura? null = sin restricción. */
 export function isOpenNow(openHour: number | null, closeHour: number | null): boolean {
   if (openHour == null || closeHour == null) return true;

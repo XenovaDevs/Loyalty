@@ -1,5 +1,7 @@
 // Utilidades de identificadores legibles.
 
+import { randomInt } from "node:crypto";
+
 export function slugify(input: string): string {
   return input
     .toLowerCase()
@@ -10,13 +12,15 @@ export function slugify(input: string): string {
     .slice(0, 48);
 }
 
-// Código corto tipo "A4F9-21" para la tarjeta del cliente (sin 0/O/1/I para evitar confusión).
+// Código de la tarjeta del cliente, tipo "A4F9-21KX" (sin 0/O/1/I para evitar confusión).
+// El código es la "llave" pública de /t/[code]: 8 caracteres de 32 símbolos
+// = 40 bits, con generador criptográfico (Math.random es predecible). Antes eran
+// 6 caracteres (~30 bits), barrible para listar nombres de clientes.
+// Los códigos viejos (formato XXXX-XX) siguen funcionando.
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 export function customerCode(): string {
   const pick = (n: number) =>
-    Array.from({ length: n }, () =>
-      ALPHABET[Math.floor(Math.random() * ALPHABET.length)],
-    ).join("");
-  return `${pick(4)}-${pick(2)}`;
+    Array.from({ length: n }, () => ALPHABET[randomInt(ALPHABET.length)]).join("");
+  return `${pick(4)}-${pick(4)}`;
 }

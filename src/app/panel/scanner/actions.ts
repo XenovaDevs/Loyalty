@@ -1,7 +1,9 @@
 "use server";
 
+import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireBusiness } from "@/lib/tenant";
+import { withMembershipLock } from "@/lib/locks";
 import { deriveBalance, stampProgress, type EventType } from "@/lib/loyalty";
 import { sendPushToCustomer } from "@/lib/push";
 
@@ -77,8 +79,9 @@ async function resultForCustomer(customerId: string): Promise<ScanResult> {
   };
 }
 
-export async function lookupCustomer(codeRaw: string): Promise<ScanResult> {
+export async function lookupCustomer(codeRaw: unknown): Promise<ScanResult> {
   const { businessId } = await requireBusiness();
+  if (typeof codeRaw !== "string" || codeRaw.length > 32) return { found: false };
   const code = codeRaw.trim().replace(/^#/, "").toUpperCase();
   if (!code) return { found: false };
   const customer = await prisma.customer.findUnique({
@@ -88,7 +91,14 @@ export async function lookupCustomer(codeRaw: string): Promise<ScanResult> {
   return resultForCustomer(customer.id);
 }
 
-async function assertMembership(businessId: string, membershipId: string) {
+// Límites de lo que un empleado puede cargar en una sola operación. La UI solo
+// manda +1/+2 sellos, pero un server action se puede llamar con cualquier valor.
+const MAX_STAMPS_PER_OP = 5;
+const MAX_POINTS_PER_OP = 10_000;
+
+async function assertMembership(businessId: string, membershipId: unknown) {
+  if (typeof membershipId !== "string" || membershipId.length > 64)
+    throw new Error("Membresía no encontrada");
   const m = await prisma.membership.findFirst({
     where: { id: membershipId, program: { businessId } },
     include: { program: true, customer: true },
@@ -97,32 +107,39 @@ async function assertMembership(businessId: string, membershipId: string) {
   return m;
 }
 
-export async function addStamp(membershipId: string, qty = 1): Promise<ScanResult> {
+export async function addStamp(membershipId: string, qty: unknown = 1): Promise<ScanResult> {
   const { businessId, user } = await requireBusiness();
   const m = await assertMembership(businessId, membershipId);
   if (m.program.type !== "STAMPS") return resultForCustomer(m.customerId);
+  // Entero positivo y acotado: antes un qty negativo borraba sellos y uno
+  // enorme generaba premios infinitos.
+  if (typeof qty !== "number" || !Number.isInteger(qty) || qty < 1 || qty > MAX_STAMPS_PER_OP)
+    return resultForCustomer(m.customerId);
 
   const required = m.program.stampsRequired ?? 10;
-  const prior = await prisma.loyaltyEvent.findMany({ where: { membershipId } });
-  const before = deriveBalance(
-    prior.map((e) => ({ type: e.type as EventType, amount: e.amount as unknown as number })),
-  );
-
-  await prisma.loyaltyEvent.create({
-    data: { membershipId, type: "STAMP", amount: qty, staffUserId: user.id },
+  const crossedReward = await withMembershipLock(m.id, async (tx) => {
+    const prior = await tx.loyaltyEvent.findMany({ where: { membershipId: m.id } });
+    const before = deriveBalance(
+      prior.map((e) => ({ type: e.type as EventType, amount: e.amount as unknown as number })),
+    );
+    await tx.loyaltyEvent.create({
+      data: { membershipId: m.id, type: "STAMP", amount: qty, staffUserId: user.id },
+    });
+    // Si este sello cruzó un múltiplo de `required`, completó un premio nuevo
+    // (robusto para qty > 1, ej. el botón "+2" que va de 8 a 10).
+    const total = before + qty;
+    return Math.floor(total / required) > Math.floor(Math.max(0, before) / required);
   });
 
-  // Si este sello cruzó un múltiplo de `required`, completó un premio nuevo
-  // (robusto para qty > 1, ej. el botón "+2" que va de 8 a 10).
-  const after = before + qty;
-  const crossedReward =
-    Math.floor(after / required) > Math.floor(Math.max(0, before) / required);
   if (crossedReward) {
-    await sendPushToCustomer(m.customerId, {
-      title: "¡Tu premio está listo! 🎁",
-      body: m.program.rewardText,
-      url: `/t/${m.customer.code}`,
-    }).catch(() => {});
+    // Después de responder: la caja no espera a los servidores de push.
+    after(() =>
+      sendPushToCustomer(m.customerId, {
+        title: "¡Tu premio está listo! 🎁",
+        body: m.program.rewardText,
+        url: `/t/${m.customer.code}`,
+      }).catch(() => {}),
+    );
   }
 
   return resultForCustomer(m.customerId);
@@ -130,7 +147,7 @@ export async function addStamp(membershipId: string, qty = 1): Promise<ScanResul
 
 export async function addPoints(
   membershipId: string,
-  amount: number,
+  amount: unknown,
 ): Promise<ScanResult> {
   const { businessId, user } = await requireBusiness();
   const m = await assertMembership(businessId, membershipId);
@@ -138,9 +155,10 @@ export async function addPoints(
   if (m.program.type === "STAMPS" || m.program.type === "COUPON")
     return resultForCustomer(m.customerId);
   const pts = Math.round(Number(amount));
-  if (!Number.isFinite(pts) || pts <= 0) return resultForCustomer(m.customerId);
+  if (!Number.isFinite(pts) || pts <= 0 || pts > MAX_POINTS_PER_OP)
+    return resultForCustomer(m.customerId);
   await prisma.loyaltyEvent.create({
-    data: { membershipId, type: "POINTS", amount: pts, staffUserId: user.id },
+    data: { membershipId: m.id, type: "POINTS", amount: pts, staffUserId: user.id },
   });
   return resultForCustomer(m.customerId);
 }
@@ -150,16 +168,16 @@ export async function useCoupon(membershipId: string): Promise<ScanResult> {
   const m = await assertMembership(businessId, membershipId);
   if (m.program.type !== "COUPON") return resultForCustomer(m.customerId);
 
-  // Un solo uso: el chequeo + inserción van en una transacción para que dos
-  // llamadas concurrentes no marquen el cupón dos veces.
-  await prisma.$transaction(async (tx) => {
+  // Un solo uso: chequeo + inserción bajo lock por membresía (una transacción
+  // sola no alcanza en READ COMMITTED: dos llamadas concurrentes pasaban).
+  await withMembershipLock(m.id, async (tx) => {
     const already = await tx.loyaltyEvent.findFirst({
-      where: { membershipId, type: "REDEEM" },
+      where: { membershipId: m.id, type: "REDEEM" },
     });
     if (!already) {
       await tx.loyaltyEvent.create({
         data: {
-          membershipId,
+          membershipId: m.id,
           type: "REDEEM",
           amount: 1,
           note: "Cupón usado",
@@ -178,7 +196,7 @@ export async function revertCoupon(membershipId: string): Promise<ScanResult> {
   // Borra los eventos de canje → el cupón vuelve a estar disponible.
   // Acotado a cupones para no tocar canjes de premios de sellos.
   await prisma.loyaltyEvent.deleteMany({
-    where: { membershipId, type: "REDEEM", note: "Cupón usado" },
+    where: { membershipId: m.id, type: "REDEEM", note: "Cupón usado" },
   });
   return resultForCustomer(m.customerId);
 }
@@ -186,8 +204,10 @@ export async function revertCoupon(membershipId: string): Promise<ScanResult> {
 export type TestPushResult = { ok: boolean; message: string };
 
 /** Manda una notificación de prueba al cliente para verificar sus avisos. */
-export async function sendTestPush(code: string): Promise<TestPushResult> {
+export async function sendTestPush(code: unknown): Promise<TestPushResult> {
   const { businessId } = await requireBusiness();
+  if (typeof code !== "string" || code.length > 32)
+    return { ok: false, message: "Cliente no encontrado." };
   const clean = code.trim().replace(/^#/, "").toUpperCase();
   const customer = await prisma.customer.findUnique({
     where: { businessId_code: { businessId, code: clean } },
@@ -228,21 +248,22 @@ export async function redeemReward(membershipId: string): Promise<ScanResult> {
   const required = m.program.stampsRequired ?? 10;
 
   // Solo canjear si hay un premio pendiente (evita dejar el saldo negativo).
-  const prior = await prisma.loyaltyEvent.findMany({ where: { membershipId } });
-  const balance = deriveBalance(
-    prior.map((e) => ({ type: e.type as EventType, amount: e.amount as unknown as number })),
-  );
-  if (stampProgress(balance, required).rewardsPending < 1)
-    return resultForCustomer(m.customerId);
-
-  await prisma.loyaltyEvent.create({
-    data: {
-      membershipId,
-      type: "REDEEM",
-      amount: required,
-      note: "Canje de premio",
-      staffUserId: user.id,
-    },
+  // Bajo lock: con doble click o dos cajas, ambas veían rewardsPending=1.
+  await withMembershipLock(m.id, async (tx) => {
+    const prior = await tx.loyaltyEvent.findMany({ where: { membershipId: m.id } });
+    const balance = deriveBalance(
+      prior.map((e) => ({ type: e.type as EventType, amount: e.amount as unknown as number })),
+    );
+    if (stampProgress(balance, required).rewardsPending < 1) return;
+    await tx.loyaltyEvent.create({
+      data: {
+        membershipId: m.id,
+        type: "REDEEM",
+        amount: required,
+        note: "Canje de premio",
+        staffUserId: user.id,
+      },
+    });
   });
   return resultForCustomer(m.customerId);
 }

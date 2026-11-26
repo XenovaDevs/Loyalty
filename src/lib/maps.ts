@@ -44,7 +44,47 @@ export function parseGoogleMapsCoords(input: string): Coords | null {
   return null;
 }
 
-/** ¿Es un link acortado de Google Maps que hay que expandir en el servidor? */
+/**
+ * ¿Es un link acortado de Google Maps que hay que expandir en el servidor?
+ * Se parsea la URL y se compara el host EXACTO: un regex sin anclar dejaba
+ * pasar cosas como "http://127.0.0.1:3004/?x=https://maps.app.goo.gl/" (SSRF).
+ */
 export function isShortMapsUrl(input: string): boolean {
-  return /https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps)\//i.test(input.trim());
+  const u = parseHttpsUrl(input);
+  if (!u) return false;
+  return (
+    u.hostname === "maps.app.goo.gl" ||
+    (u.hostname === "goo.gl" && u.pathname.startsWith("/maps/"))
+  );
+}
+
+/**
+ * Hosts a los que el servidor puede seguir una redirección mientras expande un
+ * link acortado. Cualquier otro destino se descarta sin pedirlo.
+ */
+const GOOGLE_MAPS_HOSTS = new Set([
+  "maps.app.goo.gl",
+  "goo.gl",
+  "maps.google.com",
+  "www.google.com",
+  "google.com",
+  "www.google.com.ar",
+  "google.com.ar",
+  "maps.google.com.ar",
+]);
+
+export function isGoogleMapsHost(input: string): boolean {
+  const u = parseHttpsUrl(input);
+  return !!u && GOOGLE_MAPS_HOSTS.has(u.hostname);
+}
+
+function parseHttpsUrl(input: string): URL | null {
+  try {
+    const u = new URL(input.trim());
+    if (u.protocol !== "https:") return null;
+    if (u.username || u.password || (u.port && u.port !== "443")) return null;
+    return u;
+  } catch {
+    return null;
+  }
 }

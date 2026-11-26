@@ -1,7 +1,9 @@
 "use server";
 
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { distanceMeters, isOpenNow } from "@/lib/geo";
+import { distanceMeters, isOpenNow, dayKeyInBusinessTz } from "@/lib/geo";
+import { withMembershipLock } from "@/lib/locks";
 
 const CHECKIN_NOTE = "checkin";
 const MAX_ACCURACY_M = 200; // rechaza lecturas de GPS muy imprecisas
@@ -17,12 +19,30 @@ export type CheckInResult = {
  * Check-in por cercanía: suma puntos si el cliente está dentro del radio del
  * local, en horario de apertura, y no hizo check-in hoy.
  */
+// Los server actions se pueden llamar directo con cualquier argumento: validar.
+// (Antes un lat/lng NaN hacía que `dist > radio` diera false y pasara el chequeo.)
+const CheckInInput = z.object({
+  code: z.string().min(1).max(32),
+  lat: z.number().finite().min(-90).max(90),
+  lng: z.number().finite().min(-180).max(180),
+  accuracy: z.number().finite().min(0).max(100_000),
+});
+
 export async function checkIn(
-  code: string,
-  lat: number,
-  lng: number,
-  accuracy: number,
+  codeArg: unknown,
+  latArg: unknown,
+  lngArg: unknown,
+  accuracyArg: unknown,
 ): Promise<CheckInResult> {
+  const parsed = CheckInInput.safeParse({
+    code: codeArg,
+    lat: latArg,
+    lng: lngArg,
+    accuracy: accuracyArg,
+  });
+  if (!parsed.success) return { ok: false, message: "No pudimos ubicarte. Probá de nuevo." };
+  const { code, lat, lng, accuracy } = parsed.data;
+
   const customer = await prisma.customer.findUnique({
     where: { code: code.toUpperCase() },
     include: {
@@ -48,7 +68,7 @@ export async function checkIn(
     return { ok: false, message: "El check-in solo cuenta en horario del local." };
   }
 
-  if (Number.isFinite(accuracy) && accuracy > MAX_ACCURACY_M) {
+  if (accuracy > MAX_ACCURACY_M) {
     return { ok: false, message: "No pudimos ubicarte con precisión. Probá de nuevo." };
   }
 
@@ -60,29 +80,31 @@ export async function checkIn(
     };
   }
 
-  // Cooldown: un check-in por día.
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
-  const already = await prisma.loyaltyEvent.findFirst({
-    where: {
-      membershipId: visit.id,
-      note: CHECKIN_NOTE,
-      createdAt: { gte: startOfDay },
-    },
+  // Cooldown: un check-in por día (día calendario en la zona del negocio, no
+  // del servidor en UTC). Chequeo + inserción bajo lock por membresía: sin él,
+  // N requests en paralelo pasaban todas el "¿ya hizo check-in hoy?".
+  const points = visit.program.pointsPerVisit ?? 10;
+  const today = dayKeyInBusinessTz();
+  const added = await withMembershipLock(visit.id, async (tx) => {
+    const last = await tx.loyaltyEvent.findFirst({
+      where: { membershipId: visit.id, note: CHECKIN_NOTE },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    });
+    if (last && dayKeyInBusinessTz(last.createdAt) === today) return false;
+    await tx.loyaltyEvent.create({
+      data: {
+        membershipId: visit.id,
+        type: "POINTS",
+        amount: points,
+        note: CHECKIN_NOTE,
+      },
+    });
+    return true;
   });
-  if (already) {
+  if (!added) {
     return { ok: false, message: "Ya sumaste tu visita de hoy. ¡Volvé mañana!" };
   }
-
-  const points = visit.program.pointsPerVisit ?? 10;
-  await prisma.loyaltyEvent.create({
-    data: {
-      membershipId: visit.id,
-      type: "POINTS",
-      amount: points,
-      note: CHECKIN_NOTE,
-    },
-  });
 
   // Saldo de puntos actualizado.
   const events = await prisma.loyaltyEvent.findMany({

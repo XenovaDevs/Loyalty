@@ -8,6 +8,12 @@ const OWNER_EMAIL = "admin@sello.test";
 const OWNER_PASSWORD = "password123";
 
 async function main() {
+  // Crea un dueño con contraseña conocida: jamás contra la base de producción.
+  if (process.env.NODE_ENV === "production" || process.env.ALLOW_SEED !== "1") {
+    throw new Error(
+      "Seed deshabilitado. Es solo para desarrollo: corré con ALLOW_SEED=1 (y NUNCA en producción).",
+    );
+  }
   // Limpieza idempotente del comercio demo.
   const existing = await prisma.business.findUnique({
     where: { slug: "yogur-griego-rey" },

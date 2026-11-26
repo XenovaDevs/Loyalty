@@ -12,6 +12,29 @@ function ensureConfigured() {
   configured = true;
 }
 
+/**
+ * ¿El endpoint es de un servicio push real? (https + host del fabricante).
+ * Se valida al guardar Y al enviar, por si quedó algo viejo en la base.
+ */
+export function isAllowedPushEndpoint(endpoint: string): boolean {
+  try {
+    const u = new URL(endpoint);
+    if (u.protocol !== "https:" || u.username || u.password) return false;
+    if (u.port && u.port !== "443") return false;
+    const h = u.hostname.toLowerCase();
+    return (
+      h === "fcm.googleapis.com" || // Chrome, Android, Opera, Brave
+      h === "updates.push.services.mozilla.com" || // Firefox
+      h.endsWith(".push.apple.com") || // Safari / iOS
+      h.endsWith(".notify.windows.com") // Edge (WNS)
+    );
+  } catch {
+    return false;
+  }
+}
+
+const PUSH_TIMEOUT_MS = 5000;
+
 export type PushSendResult = {
   subscriptions: number; // suscripciones del cliente al momento de enviar
   sent: number; // entregadas OK
@@ -24,13 +47,22 @@ export async function sendPushToCustomer(
   payload: { title: string; body: string; url?: string },
 ): Promise<PushSendResult> {
   ensureConfigured();
-  const subs = await prisma.pushSubscription.findMany({ where: { customerId } });
+  const subs = await prisma.pushSubscription.findMany({
+    where: { customerId },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+  });
   const data = JSON.stringify(payload);
   let sent = 0;
   let removed = 0;
 
   await Promise.all(
     subs.map(async (s) => {
+      if (!isAllowedPushEndpoint(s.endpoint)) {
+        removed++;
+        await prisma.pushSubscription.delete({ where: { id: s.id } }).catch(() => {});
+        return;
+      }
       try {
         await webpush.sendNotification(
           {
@@ -38,6 +70,7 @@ export async function sendPushToCustomer(
             keys: { p256dh: s.p256dh, auth: s.auth },
           },
           data,
+          { timeout: PUSH_TIMEOUT_MS, TTL: 60 * 60 * 24 },
         );
         sent++;
       } catch (err: unknown) {

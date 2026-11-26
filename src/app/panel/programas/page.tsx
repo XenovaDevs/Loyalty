@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireBusiness } from "@/lib/tenant";
+import { requireBusiness, isOwner } from "@/lib/tenant";
 import { PageHeader, Badge } from "@/components/ui";
 import { NewProgram } from "./new-program";
 import { ToggleButton } from "./toggle-button";
@@ -17,7 +17,9 @@ function parseMessages(raw: string | null): string[] {
 }
 
 export default async function ProgramasPage() {
-  const { businessId } = await requireBusiness();
+  const { businessId, user } = await requireBusiness();
+  // Crear/editar/pausar programas es solo del dueño (las acciones también lo exigen).
+  const owner = isOwner(user);
   const programs = await prisma.program.findMany({
     where: { businessId },
     orderBy: { createdAt: "desc" },
@@ -26,7 +28,7 @@ export default async function ProgramasPage() {
 
   return (
     <>
-      <PageHeader kicker="Fidelización" title="Programas" action={<NewProgram />} />
+      <PageHeader kicker="Fidelización" title="Programas" action={owner ? <NewProgram /> : undefined} />
 
       {programs.length === 0 ? (
         <p className="py-16 text-center text-sm text-ink-2">
@@ -56,6 +58,7 @@ export default async function ProgramasPage() {
                   · {p._count.memberships} clientes
                 </p>
               </div>
+              {owner && (
               <div className="flex items-center gap-2">
                 <EditProgram
                   id={p.id}
@@ -78,6 +81,7 @@ export default async function ProgramasPage() {
                 />
                 <ToggleButton id={p.id} active={p.active} />
               </div>
+              )}
             </div>
           ))}
         </div>

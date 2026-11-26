@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireBusiness } from "@/lib/tenant";
+import { requireBusiness, isOwner } from "@/lib/tenant";
 
 export type FormResult = { error?: string; ok?: boolean } | undefined;
 
@@ -61,7 +61,8 @@ export async function createProgram(
   _prev: FormResult,
   formData: FormData,
 ): Promise<FormResult> {
-  const { businessId } = await requireBusiness();
+  const { businessId, user } = await requireBusiness();
+  if (!isOwner(user)) return { error: "Solo el dueño puede crear programas." };
 
   const type = String(formData.get("type") ?? "STAMPS");
   const name = String(formData.get("name") ?? "").trim();
@@ -107,7 +108,8 @@ export async function updateProgram(
   _prev: FormResult,
   formData: FormData,
 ): Promise<FormResult> {
-  const { businessId } = await requireBusiness();
+  const { businessId, user } = await requireBusiness();
+  if (!isOwner(user)) return { error: "Solo el dueño puede editar programas." };
   const id = String(formData.get("id") ?? "");
 
   const program = await prisma.program.findFirst({ where: { id, businessId } });
@@ -147,8 +149,9 @@ export async function updateProgram(
   return { ok: true };
 }
 
-export async function toggleProgram(programId: string) {
-  const { businessId } = await requireBusiness();
+export async function toggleProgram(programId: unknown) {
+  const { businessId, user } = await requireBusiness();
+  if (!isOwner(user) || typeof programId !== "string") return;
   const program = await prisma.program.findFirst({
     where: { id: programId, businessId },
   });
