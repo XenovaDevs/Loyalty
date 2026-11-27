@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireBusiness } from "@/lib/tenant";
+import { requireBusiness, isOwner } from "@/lib/tenant";
 import { progressOf } from "@/lib/membership";
 import { PageHeader } from "@/components/ui";
 import { NewCustomer } from "./new-customer";
+import { EditCustomer } from "./edit-customer";
 
 export default async function ClientesPage() {
-  const { businessId } = await requireBusiness();
+  const { businessId, user } = await requireBusiness();
+  const owner = isOwner(user);
 
   const [customers, programs] = await Promise.all([
     prisma.customer.findMany({
@@ -30,6 +32,7 @@ export default async function ClientesPage() {
       id: c.id,
       name: c.name,
       phone: c.phone ?? "—",
+      rawPhone: c.phone ?? "",
       code: c.code,
       stamps: prog ? (prog.isComplete ? "¡premio!" : `${prog.filled}/${prog.required}`) : "—",
     };
@@ -67,13 +70,23 @@ export default async function ClientesPage() {
                       {r.stamps}
                     </span>
                   </div>
-                  <Link
-                    href={`/t/${r.code}`}
-                    target="_blank"
-                    className="-my-2 shrink-0 py-2 font-mono text-[12px] text-spot"
-                  >
-                    ver tarjeta →
-                  </Link>
+                  <div className="flex shrink-0 items-center gap-4">
+                    <EditCustomer
+                      id={r.id}
+                      name={r.name}
+                      phone={r.rawPhone}
+                      code={r.code}
+                      owner={owner}
+                      compact
+                    />
+                    <Link
+                      href={`/t/${r.code}`}
+                      target="_blank"
+                      className="-my-2 shrink-0 py-2 font-mono text-[12px] text-spot"
+                    >
+                      ver tarjeta →
+                    </Link>
+                  </div>
                 </div>
               </li>
             ))}
@@ -88,6 +101,7 @@ export default async function ClientesPage() {
                 <th className="border-b border-ink py-2.5">Sellos</th>
                 <th className="border-b border-ink py-2.5">Código</th>
                 <th className="border-b border-ink py-2.5">Tarjeta</th>
+                <th className="border-b border-ink py-2.5"></th>
               </tr>
             </thead>
             <tbody>
@@ -105,6 +119,15 @@ export default async function ClientesPage() {
                     >
                       ver →
                     </Link>
+                  </td>
+                  <td className="border-b border-line py-3 text-right">
+                    <EditCustomer
+                      id={r.id}
+                      name={r.name}
+                      phone={r.rawPhone}
+                      code={r.code}
+                      owner={owner}
+                    />
                   </td>
                 </tr>
               ))}
