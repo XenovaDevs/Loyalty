@@ -62,7 +62,7 @@ export function NewStaff() {
             required
           />
           <p className="text-[12px] text-faint">
-            El empleado podrá entrar al scanner con este usuario y contraseña.
+            El empleado podrá entrar al panel con este usuario y contraseña.
           </p>
           {state?.error && <p className="text-sm text-spot">{state.error}</p>}
           <button disabled={pending} className={`${buttonCls("spot")} mt-1`}>

@@ -83,8 +83,8 @@ export default async function PanelHome() {
 
         {activity.length === 0 ? (
           <p className="py-10 text-center text-sm text-ink-2">
-            Todavía no hay clientes. Creá un programa y empezá a dar de alta
-            clientes desde el scanner.
+            Todavía no hay clientes. Creá una tarjeta de sellos e imprimí el QR
+            del local (Ajustes) para que se den de alta solos.
           </p>
         ) : (
           <table className="w-full border-collapse">
@@ -98,7 +98,11 @@ export default async function PanelHome() {
             <tbody>
               {activity.map((c) => (
                 <tr key={c.id} className="text-sm">
-                  <td className="border-b border-line py-3">{c.name}</td>
+                  <td className="border-b border-line py-3">
+                    <Link href={`/panel/clientes/${c.id}`} className="hover:text-spot">
+                      {c.name}
+                    </Link>
+                  </td>
                   <td className="border-b border-line py-3 text-ink-2">
                     {c.memberships[0]?.program.name ?? "—"}
                   </td>

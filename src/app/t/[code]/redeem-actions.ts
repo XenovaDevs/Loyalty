@@ -7,7 +7,7 @@ import { deriveBalance, stampProgress, type EventType } from "@/lib/loyalty";
 
 export type RedeemResult = { ok: boolean; message?: string };
 
-// Mismas notas que usa el scanner, así "Deshacer uso" del panel sigue andando.
+// Mismas notas que usa el panel (detalle del cliente), así "Deshacer uso" sigue andando.
 const COUPON_NOTE = "Cupón usado";
 const REWARD_NOTE = "Canje de premio";
 

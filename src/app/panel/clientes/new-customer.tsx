@@ -50,7 +50,7 @@ export function NewCustomer({ programs }: { programs: ProgramOption[] }) {
               #{state.code}
             </p>
             <p className="mb-5 text-[13px] text-faint">
-              Ya puede sumar sellos desde el scanner.
+              Ya puede sumar sellos escaneando el QR del local.
             </p>
             <button
               className={buttonCls("ghost")}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { updateCustomer, deleteCustomer, type FormResult } from "./actions";
 import { Field, buttonCls } from "@/components/ui";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -12,6 +13,9 @@ type Props = {
   code: string;
   owner: boolean;
   compact?: boolean; // botón chico (lista del celular)
+  asButton?: boolean; // botón con borde (detalle del cliente)
+  /** Adónde ir después de borrar (el detalle del cliente deja de existir). */
+  afterDeleteHref?: string;
 };
 
 export function EditCustomer(p: Props) {
@@ -21,12 +25,14 @@ export function EditCustomer(p: Props) {
       <button
         onClick={() => setOpen(true)}
         className={
-          p.compact
-            ? "-my-2 shrink-0 py-2 font-mono text-[12px] text-ink-2 hover:text-spot"
-            : "font-mono text-[11px] text-ink-2 hover:text-spot"
+          p.asButton
+            ? buttonCls("ghost")
+            : p.compact
+              ? "-my-2 shrink-0 py-2 font-mono text-[12px] text-ink-2 hover:text-spot"
+              : "font-mono text-[11px] text-ink-2 hover:text-spot"
         }
       >
-        editar
+        {p.asButton ? "Editar datos" : "editar"}
       </button>
       {/* Se monta al abrir: cada apertura arranca con el estado limpio. */}
       {open && <EditModal {...p} onClose={() => setOpen(false)} />}
@@ -34,7 +40,16 @@ export function EditCustomer(p: Props) {
   );
 }
 
-function EditModal({ id, name, phone, code, owner, onClose }: Props & { onClose: () => void }) {
+function EditModal({
+  id,
+  name,
+  phone,
+  code,
+  owner,
+  afterDeleteHref,
+  onClose,
+}: Props & { onClose: () => void }) {
+  const router = useRouter();
   const [state, action, pending] = useActionState<FormResult, FormData>(
     async (prev, fd) => {
       const r = await updateCustomer(prev, fd);
@@ -55,6 +70,7 @@ function EditModal({ id, name, phone, code, owner, onClose }: Props & { onClose:
     startDelete(async () => {
       const r = await deleteCustomer(id);
       if (r?.error) setDeleteError(r.error);
+      else if (afterDeleteHref) router.replace(afterDeleteHref);
       else onClose();
     });
   }
