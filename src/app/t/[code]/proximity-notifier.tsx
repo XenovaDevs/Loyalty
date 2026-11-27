@@ -70,6 +70,8 @@ export function ProximityNotifier({
           body: msg,
           icon: "/notification-icon.png",
           badge: "/notification-badge.png",
+          lang: "es",
+          tag: `loyalty-near-${businessId}`,
         });
       },
       () => setError("No pudimos acceder a tu ubicación."),

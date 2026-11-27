@@ -44,7 +44,9 @@ export type PushSendResult = {
 /** Envía una notificación push a todas las suscripciones de un cliente. */
 export async function sendPushToCustomer(
   customerId: string,
-  payload: { title: string; body: string; url?: string },
+  // tag: notificaciones con el mismo tag se reemplazan en vez de apilarse
+  // (varias idénticas seguidas es una de las señales de spam de Chrome).
+  payload: { title: string; body: string; url?: string; tag?: string },
 ): Promise<PushSendResult> {
   ensureConfigured();
   const subs = await prisma.pushSubscription.findMany({

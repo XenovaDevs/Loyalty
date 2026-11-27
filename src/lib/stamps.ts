@@ -3,6 +3,7 @@ import { withMembershipLock } from "./locks";
 import { deriveBalance, type EventType } from "./loyalty";
 import { dayKeyInBusinessTz } from "./geo";
 import { sendPushToCustomer } from "./push";
+import { prisma } from "./prisma";
 
 export const QR_STAMP_NOTE = "qr";
 
@@ -62,13 +63,27 @@ export async function addStamps(opts: {
   });
 }
 
-/** Avisa por push que el premio está listo, después de responder (no bloquea). */
+/**
+ * Avisa por push que el premio está listo, después de responder (no bloquea).
+ * Título = nombre del local y texto concreto, sin emojis: el filtro de spam de
+ * Chrome (Android) marca las notificaciones genéricas de sitios poco conocidos.
+ */
 export function notifyRewardReady(customerId: string, code: string, rewardText: string) {
-  after(() =>
-    sendPushToCustomer(customerId, {
-      title: "¡Tu premio está listo! 🎁",
-      body: rewardText,
-      url: `/t/${code}`,
-    }).catch(() => {}),
-  );
+  after(async () => {
+    try {
+      const c = await prisma.customer.findUnique({
+        where: { id: customerId },
+        select: { name: true, business: { select: { name: true } } },
+      });
+      if (!c) return;
+      await sendPushToCustomer(customerId, {
+        title: c.business.name,
+        body: `${c.name.split(" ")[0]}, completaste tu tarjeta de sellos. Tu premio: ${rewardText}`,
+        url: `/t/${code}`,
+        tag: "loyalty-reward",
+      });
+    } catch {
+      // un aviso que no sale no debe romper nada
+    }
+  });
 }

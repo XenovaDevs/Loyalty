@@ -12,6 +12,9 @@ self.addEventListener("push", (event) => {
       // Logo de Loyalty (ícono grande) y silueta para la barra de estado de Android.
       icon: "/notification-icon.png",
       badge: "/notification-badge.png",
+      lang: "es",
+      // Mismo tag = reemplaza a la anterior en vez de apilar duplicados.
+      ...(data.tag ? { tag: data.tag } : {}),
       data: { url: data.url },
     }),
   );

@@ -123,12 +123,21 @@ export async function revertCoupon(membershipId: unknown): Promise<ActionResult>
   return { ok: true, message: "Uso del cupón deshecho" };
 }
 
+// Una prueba cada 2 minutos por cliente: varias notificaciones iguales seguidas
+// hacen que Chrome (Android) las marque como "posible spam". En memoria: la app
+// corre en un solo proceso, y al reiniciar el límite se resetea (aceptable).
+const TEST_COOLDOWN_MS = 2 * 60 * 1000;
+const lastTest = new Map<string, number>();
+
 /** Manda una notificación de prueba al cliente para verificar sus avisos. */
 export async function sendTestPush(customerId: unknown): Promise<ActionResult> {
   const { businessId } = await requireBusiness();
   if (typeof customerId !== "string" || customerId.length > 64)
     return { ok: false, message: "Cliente no encontrado." };
-  const customer = await prisma.customer.findFirst({ where: { id: customerId, businessId } });
+  const customer = await prisma.customer.findFirst({
+    where: { id: customerId, businessId },
+    include: { business: { select: { name: true } } },
+  });
   if (!customer) return { ok: false, message: "Cliente no encontrado." };
 
   // Antes de tocar el servicio push: sin suscripciones no hay nada que probar.
@@ -140,11 +149,21 @@ export async function sendTestPush(customerId: unknown): Promise<ActionResult> {
         "Este cliente no tiene avisos activados. Pedile que abra su tarjeta y toque “Activar avisos”.",
     };
 
+  const since = Date.now() - (lastTest.get(customer.id) ?? 0);
+  if (since < TEST_COOLDOWN_MS) {
+    const s = Math.ceil((TEST_COOLDOWN_MS - since) / 1000);
+    return {
+      ok: false,
+      message: `Ya le mandaste una prueba recién. Esperá ${s} s: varias seguidas hacen que el celular las marque como spam.`,
+    };
+  }
+
   try {
     const r = await sendPushToCustomer(customer.id, {
-      title: "Notificación de prueba 🔔",
-      body: "Si ves esto, tus avisos están funcionando.",
+      title: customer.business.name,
+      body: `Hola ${customer.name.split(" ")[0]}, así te van a llegar los avisos de tu tarjeta de sellos.`,
       url: `/t/${customer.code}`,
+      tag: "loyalty-test",
     });
     if (r.subscriptions === 0)
       return {
@@ -157,6 +176,7 @@ export async function sendTestPush(customerId: unknown): Promise<ActionResult> {
         ok: false,
         message: "No se pudo entregar (suscripción vencida o revocada). Que la vuelva a activar en su tarjeta.",
       };
+    lastTest.set(customer.id, Date.now());
     return { ok: true, message: `Enviada a ${customer.name} (${r.sent} dispositivo/s).` };
   } catch {
     return { ok: false, message: "Error al enviar. Revisá las claves VAPID del entorno." };
