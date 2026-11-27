@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 import { updateCustomer, deleteCustomer, type FormResult } from "./actions";
 import { Field, buttonCls } from "@/components/ui";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 type Props = {
   id: string;
@@ -47,14 +48,9 @@ function EditModal({ id, name, phone, code, owner, onClose }: Props & { onClose:
   const [v, setV] = useState({ name, phone });
   const [deleting, startDelete] = useTransition();
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [askDelete, setAskDelete] = useState(false);
 
   function onDelete() {
-    if (
-      !confirm(
-        `¿Borrar a ${name} (#${code})? Se pierden su tarjeta, sus sellos y cupones. No se puede deshacer.`,
-      )
-    )
-      return;
     setDeleteError(null);
     startDelete(async () => {
       const r = await deleteCustomer(id);
@@ -111,15 +107,31 @@ function EditModal({ id, name, phone, code, owner, onClose }: Props & { onClose:
           <div className="mt-6 border-t border-line pt-4">
             <button
               type="button"
-              onClick={onDelete}
+              onClick={() => setAskDelete(true)}
               disabled={pending || deleting}
               className={`${buttonCls("ghost")} w-full`}
             >
-              {deleting ? "Borrando…" : "Borrar cliente"}
+              Borrar cliente
             </button>
-            {deleteError && <p className="mt-2 text-sm text-spot">{deleteError}</p>}
           </div>
         )}
+
+        <ConfirmDialog
+          open={askDelete}
+          tone="danger"
+          title={`¿Borrar a ${name}?`}
+          message={
+            <>
+              Se pierden su tarjeta <span className="font-mono">#{code}</span>, sus
+              sellos y cupones. No se puede deshacer.
+            </>
+          }
+          confirmLabel="Sí, borrar"
+          pending={deleting}
+          error={deleteError}
+          onConfirm={onDelete}
+          onCancel={() => setAskDelete(false)}
+        />
       </div>
     </div>
   );

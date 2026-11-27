@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 const MESSAGES: Record<string, { text: string; good: boolean }> = {
   sello: { text: "¡Sumaste un sello!", good: true },
   premio: {
-    text: "¡Completaste la tarjeta! Mostrá tu código en la caja para canjear tu premio.",
+    text: "¡Completaste la tarjeta! Canjeá tu premio desde acá al momento de pagar.",
     good: true,
   },
   ya: { text: "Ya sumaste tu sello de hoy. ¡Te esperamos mañana!", good: false },

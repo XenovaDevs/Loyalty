@@ -30,7 +30,7 @@ export function StampCard({
     <div className="relative overflow-hidden rounded-[var(--radius)] border border-ink">
       {complete && (
         <div className="bg-spot px-3 py-1.5 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-paper">
-          Premio listo — mostrá este código
+          Premio listo para canjear
         </div>
       )}
 

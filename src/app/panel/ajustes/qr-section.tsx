@@ -1,8 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { regenerateJoinToken } from "./actions";
 import { buttonCls } from "@/components/ui";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 type Props = {
   url: string;
@@ -16,16 +17,15 @@ export function QrSection({ url, svg, pngDataUrl, fileBase, owner }: Props) {
   const [pending, start] = useTransition();
   const svgHref = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
+  const [ask, setAsk] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   function regenerate() {
-    if (
-      !confirm(
-        "¿Generar un QR nuevo? El actual deja de funcionar y vas a tener que reimprimirlo. Las tarjetas y sellos de tus clientes no cambian.",
-      )
-    )
-      return;
+    setError(null);
     start(async () => {
       const r = await regenerateJoinToken();
-      if (r?.error) alert(r.error);
+      if (r?.error) setError(r.error);
+      else setAsk(false);
     });
   }
 
@@ -52,14 +52,26 @@ export function QrSection({ url, svg, pngDataUrl, fileBase, owner }: Props) {
         {owner && (
           <button
             type="button"
-            onClick={regenerate}
+            onClick={() => setAsk(true)}
             disabled={pending}
             className={buttonCls("ghost")}
           >
-            {pending ? "Generando…" : "Generar QR nuevo"}
+            Generar QR nuevo
           </button>
         )}
       </div>
+
+      <ConfirmDialog
+        open={ask}
+        tone="danger"
+        title="¿Generar un QR nuevo?"
+        message="El QR actual deja de funcionar y vas a tener que reimprimirlo. Las tarjetas y sellos de tus clientes no cambian."
+        confirmLabel="Sí, generar uno nuevo"
+        pending={pending}
+        error={error}
+        onConfirm={regenerate}
+        onCancel={() => setAsk(false)}
+      />
     </div>
   );
 }

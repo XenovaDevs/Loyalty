@@ -36,7 +36,7 @@ export default async function EquipoPage() {
               </div>
               <p className="mt-0.5 font-mono text-[12px] text-faint">{m.username ? `@${m.username}` : "sin usuario"}</p>
             </div>
-            {owner && m.role === "STAFF" && <RemoveStaff id={m.id} />}
+            {owner && m.role === "STAFF" && <RemoveStaff id={m.id} name={m.name} />}
           </div>
         ))}
       </div>

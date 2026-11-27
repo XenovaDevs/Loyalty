@@ -7,6 +7,9 @@ import { CouponCard } from "@/components/coupon-card";
 import { NotifyToggle } from "./notify-toggle";
 import { ProximityNotifier } from "./proximity-notifier";
 import { QrBanner } from "./qr-banner";
+import { RedeemButton } from "./redeem-button";
+import { UsedStamp } from "./used-stamp";
+import { dayKeyInBusinessTz } from "@/lib/geo";
 import { AutoRefresh } from "@/components/auto-refresh";
 
 export default async function CustomerCardPage({
@@ -54,6 +57,12 @@ export default async function CustomerCardPage({
     b.longitude != null &&
     notifyMessages.length > 0;
 
+  // Último canje de premio de HOY (para mostrarle al personal que se acaba de canjear).
+  const today = dayKeyInBusinessTz();
+  const rewardRedeemedToday = stampMembership?.events
+    .filter((e) => e.type === "REDEEM" && dayKeyInBusinessTz(e.createdAt) === today)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+
   const firstName = customer.name.split(" ")[0];
   const initial = customer.business.name.charAt(0).toUpperCase();
 
@@ -83,7 +92,7 @@ export default async function CustomerCardPage({
       {prog && (
         <p className="mb-5 mt-0.5 text-sm leading-relaxed text-ink-2">
           {prog.isComplete
-            ? "¡Tenés un premio listo! Mostrá tu código en la caja."
+            ? "¡Tenés un premio listo! Canjealo en el local al momento de pagar."
             : `Te faltan ${prog.remaining} sellos para tu próximo premio.`}
         </p>
       )}
@@ -101,24 +110,49 @@ export default async function CustomerCardPage({
           complete={prog.isComplete}
         />
       )}
+      {stampMembership && prog?.isComplete && (
+        <RedeemButton
+          code={customer.code}
+          membershipId={stampMembership.id}
+          kind="reward"
+          reward={stampMembership.program.rewardText}
+        />
+      )}
+      {rewardRedeemedToday && (
+        <UsedStamp at={rewardRedeemedToday.createdAt} label="Premio canjeado" />
+      )}
 
-      {couponMemberships.map((m) => (
-        <div
-          key={m.id}
-          className={stampMembership ? "mt-6" : ""}
-        >
-          <CouponCard
-            brandName={customer.business.name}
-            brandSub={customer.business.city ?? undefined}
-            logoText={initial}
-            reward={m.program.rewardText}
-            couponCode={m.program.couponCode}
-            expiresAt={m.program.couponExpiresAt}
-            used={m.events.some((e) => e.type === "REDEEM")}
-            who={customer.name}
-          />
-        </div>
-      ))}
+      {couponMemberships.map((m) => {
+        const usedAt = m.events.find((e) => e.type === "REDEEM")?.createdAt;
+        const expired =
+          m.program.couponExpiresAt != null && m.program.couponExpiresAt < new Date();
+        return (
+          <div key={m.id} className={stampMembership ? "mt-6" : ""}>
+            <CouponCard
+              brandName={customer.business.name}
+              brandSub={customer.business.city ?? undefined}
+              logoText={initial}
+              reward={m.program.rewardText}
+              couponCode={m.program.couponCode}
+              expiresAt={m.program.couponExpiresAt}
+              used={usedAt != null}
+              who={customer.name}
+            />
+            {usedAt ? (
+              <UsedStamp at={usedAt} label="Cupón usado" />
+            ) : expired ? (
+              <p className="mt-3 text-center text-sm text-ink-2">Este cupón está vencido.</p>
+            ) : (
+              <RedeemButton
+                code={customer.code}
+                membershipId={m.id}
+                kind="coupon"
+                reward={m.program.rewardText}
+              />
+            )}
+          </div>
+        );
+      })}
 
       {(stampMembership || couponMemberships.length > 0) && (
         <NotifyToggle code={customer.code} />
@@ -143,24 +177,8 @@ export default async function CustomerCardPage({
         </p>
       )}
 
-      <section className="mt-7 text-center">
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">
-          Mostrá este código en la caja
-        </p>
-        <div
-          className="mx-auto my-3 size-[166px] border border-ink"
-          style={{
-            background:
-              "conic-gradient(from 0deg,#191814 0 25%,transparent 0 50%,#191814 0 75%,transparent 0 100%) 0 0/15px 15px, var(--color-paper)",
-          }}
-          aria-label="Código QR"
-        />
-        <p className="font-mono text-lg font-bold tracking-[0.16em]">
-          {customer.code}
-        </p>
-      </section>
 
-      <div className="my-5 flex items-center gap-3 text-faint">
+      <div className="mt-8 mb-5 flex items-center gap-3 text-faint">
         <span className="h-px flex-1 bg-line" />
         <span className="font-mono text-[10px] uppercase tracking-[0.14em]">
           sin apps
