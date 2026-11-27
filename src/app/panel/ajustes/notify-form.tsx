@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
+import { updateNotify, type FormResult } from "./actions";
+import { buttonCls } from "@/components/ui";
 
 type Props = {
-  defaultEnabled?: boolean;
-  defaultMessages?: string[];
-  defaultRadiusM?: number | null;
-  defaultStartHour?: number | null;
-  defaultEndHour?: number | null;
+  enabled: boolean;
+  messages: string[];
+  radiusM: number;
+  startHour: number | null;
+  endHour: number | null;
+  hasLocation: boolean;
 };
 
 const inputCls =
@@ -16,20 +19,18 @@ const labelCls =
   "mb-2 block font-mono text-[10px] uppercase tracking-[0.14em] text-faint";
 
 /**
- * Config del aviso por cercanía (compartida entre crear y editar programa).
- * Mensajes: uno por línea; el cliente recibe uno al azar en cada aviso.
+ * Aviso de cercanía del local: cuando un cliente con la tarjeta abierta pasa
+ * cerca, recibe una notificación con uno de estos mensajes (al azar).
  */
-export function NotifyFields({
-  defaultEnabled = false,
-  defaultMessages = [],
-  defaultRadiusM = null,
-  defaultStartHour = null,
-  defaultEndHour = null,
-}: Props) {
-  const [enabled, setEnabled] = useState(defaultEnabled);
+export function NotifyForm(initial: Props) {
+  const [state, action, pending] = useActionState<FormResult, FormData>(
+    updateNotify,
+    undefined,
+  );
+  const [enabled, setEnabled] = useState(initial.enabled);
 
   return (
-    <fieldset className="border border-line p-4">
+    <form action={action} className="mt-6 flex max-w-md flex-col gap-5">
       <label className="flex cursor-pointer items-center gap-2.5">
         <input
           type="checkbox"
@@ -39,34 +40,36 @@ export function NotifyFields({
           className="size-4 accent-[var(--color-spot)]"
         />
         <span className="font-display text-base font-semibold">
-          Avisar cuando el cliente pase cerca
+          Avisar cuando un cliente pase cerca
         </span>
       </label>
+      {!initial.hasLocation && (
+        <p className="-mt-2 text-[12px] text-faint">
+          Necesita la ubicación del local (arriba).
+        </p>
+      )}
 
       {enabled && (
-        <div className="mt-4 flex flex-col gap-5">
+        <>
           <label className="block">
-            <span className={labelCls}>
-              Mensajes (uno por línea · se elige uno al azar)
-            </span>
+            <span className={labelCls}>Mensajes (uno por línea · se elige uno al azar)</span>
             <textarea
               name="notifyMessages"
               rows={3}
-              defaultValue={defaultMessages.join("\n")}
+              defaultValue={initial.messages.join("\n")}
               placeholder={"¡Pasá por un cafecito! ☕\nTenés un premio esperándote\n2x1 solo hoy 👀"}
               className={`${inputCls} resize-y leading-relaxed`}
             />
           </label>
 
           <label className="block">
-            <span className={labelCls}>Radio del aviso en metros (opcional)</span>
+            <span className={labelCls}>Radio del aviso (metros)</span>
             <input
               type="number"
               name="notifyRadiusM"
-              min={10}
+              min={20}
               max={5000}
-              defaultValue={defaultRadiusM ?? ""}
-              placeholder="Usa el radio del comercio"
+              defaultValue={initial.radiusM}
               className={inputCls}
             />
           </label>
@@ -79,8 +82,7 @@ export function NotifyFields({
                 name="notifyStartHour"
                 min={0}
                 max={23}
-                defaultValue={defaultStartHour ?? ""}
-                placeholder="0"
+                defaultValue={initial.startHour ?? ""}
                 className={inputCls}
               />
             </label>
@@ -91,19 +93,24 @@ export function NotifyFields({
                 name="notifyEndHour"
                 min={0}
                 max={23}
-                defaultValue={defaultEndHour ?? ""}
-                placeholder="23"
+                defaultValue={initial.endHour ?? ""}
                 className={inputCls}
               />
             </label>
           </div>
-
-          <p className="-mt-1 text-[12px] text-faint">
-            Si dejás radio u horario vacíos, se usan los del comercio (Ajustes).
-            El aviso funciona con la tarjeta abierta en el teléfono.
+          <p className="-mt-2 text-[12px] text-faint">
+            Sin franja, avisa en el horario del local. Funciona con la tarjeta
+            abierta en el teléfono (aunque sea en segundo plano), como mucho un
+            aviso cada 2 horas.
           </p>
-        </div>
+        </>
       )}
-    </fieldset>
+
+      {state?.error && <p className="text-sm text-spot">{state.error}</p>}
+      {state?.ok && <p className="text-sm text-spot">✓ Aviso guardado.</p>}
+      <button disabled={pending} className={buttonCls("spot")}>
+        {pending ? "Guardando…" : "Guardar aviso"}
+      </button>
+    </form>
   );
 }

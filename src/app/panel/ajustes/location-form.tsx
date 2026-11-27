@@ -9,7 +9,6 @@ type Props = {
   latitude: number | null;
   longitude: number | null;
   mapsUrl: string | null;
-  checkinRadiusM: number;
   openHour: number | null;
   closeHour: number | null;
 };
@@ -72,8 +71,9 @@ export function LocationForm(initial: Props) {
   return (
     <form action={action} className="mt-6 flex max-w-md flex-col gap-5">
       <p className="text-sm text-ink-2">
-        Pegá el link de tu local en Google Maps, o parate dentro del local y
-        tocá <strong>“Usar mi ubicación actual”</strong>.
+        La ubicación se usa para el aviso de cercanía. Pegá el link de tu local
+        en Google Maps, o parate dentro del local y tocá{" "}
+        <strong>“Usar mi ubicación actual”</strong>.
       </p>
 
       <div>
@@ -157,15 +157,6 @@ export function LocationForm(initial: Props) {
         </p>
       )}
 
-      <Field
-        label="Radio del check-in (metros)"
-        name="checkinRadiusM"
-        type="number"
-        min={20}
-        max={2000}
-        defaultValue={initial.checkinRadiusM}
-      />
-
       <div className="grid grid-cols-2 gap-4">
         <Field
           label="Abre (hora 0-23)"
@@ -184,6 +175,10 @@ export function LocationForm(initial: Props) {
           defaultValue={initial.closeHour ?? ""}
         />
       </div>
+      <p className="-mt-3 text-[12px] text-faint">
+        Con el local cerrado, escanear el QR no suma sellos. Vacío = sin
+        restricción.
+      </p>
 
       {state?.error && <p className="text-sm text-spot">{state.error}</p>}
       {state?.ok && <p className="text-sm text-spot">✓ Ajustes guardados.</p>}

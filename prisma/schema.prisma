@@ -23,13 +23,26 @@ model Business {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Check-in por cercanía (geolocalización).
-  latitude      Float?
-  longitude     Float?
-  mapsUrl       String? // link de Google Maps del local (se derivan lat/long)
-  checkinRadiusM Int   @default(120) // radio en metros
-  openHour      Int?   // hora de apertura (0-23); null = sin restricción
-  closeHour     Int?   // hora de cierre (0-23)
+  // QR único del local (/q/[joinToken]): el cliente lo escanea para darse de
+  // alta y, las veces siguientes, para sumar un sello. Aleatorio (no el slug)
+  // para que no se pueda adivinar la URL; el dueño lo puede regenerar.
+  joinToken String @unique @default(dbgenerated("replace((gen_random_uuid())::text, '-'::text, ''::text)"))
+
+  // Ubicación del local (para el aviso de cercanía).
+  latitude  Float?
+  longitude Float?
+  mapsUrl   String? // link de Google Maps del local (se derivan lat/long)
+  // Horario (0-23); null = sin restricción. Los sellos por QR solo se suman
+  // con el local abierto.
+  openHour  Int?
+  closeHour Int?
+
+  // Aviso de cercanía del local: notifica al cliente cuando pasa cerca.
+  notifyEnabled   Boolean @default(false)
+  notifyMessages  String? // JSON: array de textos; se elige uno al azar en cada aviso
+  notifyRadiusM   Int     @default(120) // radio del aviso en metros
+  notifyStartHour Int? // franja del aviso (0-23); null = usa el horario del local
+  notifyEndHour   Int?
 
   users     User[]
   programs  Program[]
@@ -111,27 +124,19 @@ model Verification {
 model Program {
   id         String  @id @default(cuid())
   businessId String
-  type       String // STAMPS | POINTS | CASHBACK | COUPON | VISIT
+  type       String // STAMPS | COUPON (un solo STAMPS activo por comercio: el QR suma ahí)
   name       String
   rewardText String // "Comprá 10, el 11 gratis"
   active     Boolean @default(true)
 
   // Reglas según tipo (nullable: solo aplican las del tipo correspondiente)
   stampsRequired    Int? // STAMPS
-  pointsPerCurrency Decimal? // POINTS/CASHBACK: pts por $1
-  pointsPerVisit    Int? // VISIT: puntos por check-in de cercanía
+  pointsPerCurrency Decimal? // POINTS/CASHBACK: pts por $1 (sin uso)
   couponCode        String? // COUPON
   couponExpiresAt   DateTime?
 
   // Diseño de la tarjeta (logo, colores) serializado como JSON string.
   design String?
-
-  // Aviso por cercanía: notifica al cliente cuando pasa cerca del local.
-  notifyEnabled   Boolean @default(false)
-  notifyMessages  String? // JSON: array de textos; se elige uno al azar en cada aviso
-  notifyRadiusM   Int? // radio del aviso en metros; null = usa el radio del comercio
-  notifyStartHour Int? // franja horaria permitida (0-23); null = usa el horario del local
-  notifyEndHour   Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

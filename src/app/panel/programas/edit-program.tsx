@@ -3,7 +3,6 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { updateProgram, type FormResult } from "./actions";
 import { Field, buttonCls } from "@/components/ui";
-import { NotifyFields } from "./notify-fields";
 
 type Props = {
   id: string;
@@ -11,14 +10,8 @@ type Props = {
   name: string;
   rewardText: string;
   stampsRequired: number | null;
-  pointsPerVisit: number | null;
   couponCode: string | null;
   couponExpiresAt: string | null; // yyyy-mm-dd
-  notifyEnabled: boolean;
-  notifyMessages: string[];
-  notifyRadiusM: number | null;
-  notifyStartHour: number | null;
-  notifyEndHour: number | null;
 };
 
 export function EditProgram(p: Props) {
@@ -76,16 +69,6 @@ export function EditProgram(p: Props) {
               defaultValue={p.stampsRequired ?? 10}
             />
           )}
-          {p.type === "VISIT" && (
-            <Field
-              label="Puntos por visita"
-              name="pointsPerVisit"
-              type="number"
-              min={1}
-              max={1000}
-              defaultValue={p.pointsPerVisit ?? 10}
-            />
-          )}
           {p.type === "COUPON" && (
             <>
               <Field
@@ -101,14 +84,6 @@ export function EditProgram(p: Props) {
               />
             </>
           )}
-
-          <NotifyFields
-            defaultEnabled={p.notifyEnabled}
-            defaultMessages={p.notifyMessages}
-            defaultRadiusM={p.notifyRadiusM}
-            defaultStartHour={p.notifyStartHour}
-            defaultEndHour={p.notifyEndHour}
-          />
 
           {state?.error && <p className="text-sm text-spot">{state.error}</p>}
           <button disabled={pending} className={`${buttonCls("spot")} mt-1`}>

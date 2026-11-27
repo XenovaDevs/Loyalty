@@ -31,12 +31,14 @@ async function main() {
       slug: slugify("Yogur Griego Rey"),
       city: "Puerto Madryn",
       plan: "GROW",
-      // Ubicación del local (Puerto Madryn) para el check-in por cercanía.
+      // Ubicación del local (Puerto Madryn) para el aviso de cercanía.
       latitude: -42.769201,
       longitude: -65.038515,
-      checkinRadiusM: 150,
       openHour: 9,
       closeHour: 22,
+      notifyEnabled: true,
+      notifyMessages: JSON.stringify(["¡Pasá por un yogur! 🍓", "Tenés sellos esperándote"]),
+      notifyRadiusM: 150,
     },
   });
 
@@ -72,17 +74,6 @@ async function main() {
     },
   });
 
-  // Programa de visitas (check-in por cercanía).
-  const visitProgram = await prisma.program.create({
-    data: {
-      businessId: business.id,
-      type: "VISIT",
-      name: "Puntos por visita",
-      rewardText: "Pasá y sumá puntos en cada visita",
-      pointsPerVisit: 15,
-    },
-  });
-
   // Cupón de bienvenida (25% OFF, un solo uso).
   const couponProgram = await prisma.program.create({
     data: {
@@ -95,12 +86,12 @@ async function main() {
     },
   });
 
-  // Clientes: inscriptos en sellos + visitas + cupón de bienvenida.
+  // Clientes: inscriptos en sellos + cupón de bienvenida.
   const demo = [
-    { name: "Sofía Martínez", phone: "280 415-2290", stamps: 7, points: 45, couponUsed: false },
-    { name: "Juan Pérez", phone: "280 433-1180", stamps: 10, points: 30, couponUsed: true },
-    { name: "Lucía Gómez", phone: "280 466-7781", stamps: 3, points: 0, couponUsed: false },
-    { name: "Mateo Fernández", phone: "280 412-9043", stamps: 5, points: 60, couponUsed: false },
+    { name: "Sofía Martínez", phone: "280 415-2290", stamps: 7, couponUsed: false },
+    { name: "Juan Pérez", phone: "280 433-1180", stamps: 10, couponUsed: true },
+    { name: "Lucía Gómez", phone: "280 466-7781", stamps: 3, couponUsed: false },
+    { name: "Mateo Fernández", phone: "280 412-9043", stamps: 5, couponUsed: false },
   ];
 
   for (const d of demo) {
@@ -126,20 +117,6 @@ async function main() {
       })),
     });
 
-    const visitMembership = await prisma.membership.create({
-      data: { programId: visitProgram.id, customerId: customer.id },
-    });
-    if (d.points > 0) {
-      await prisma.loyaltyEvent.create({
-        data: {
-          membershipId: visitMembership.id,
-          type: "POINTS",
-          amount: d.points,
-          note: "seed",
-        },
-      });
-    }
-
     const couponMembership = await prisma.membership.create({
       data: { programId: couponProgram.id, customerId: customer.id },
     });
@@ -159,6 +136,7 @@ async function main() {
   console.log("✔ Seed listo.");
   console.log(`  Comercio: ${business.name}`);
   console.log(`  Login:    ${OWNER_USERNAME} / ${OWNER_PASSWORD}`);
+  console.log(`  QR:       /q/${business.joinToken}`);
 }
 
 main()

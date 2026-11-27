@@ -2,7 +2,6 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireBusiness } from "@/lib/tenant";
 import { progressOf } from "@/lib/membership";
-import { deriveBalance, type EventType } from "@/lib/loyalty";
 import { PageHeader } from "@/components/ui";
 import { NewCustomer } from "./new-customer";
 
@@ -27,24 +26,12 @@ export default async function ClientesPage() {
   const rows = customers.map((c) => {
     const stampM = c.memberships.find((m) => m.program.type === "STAMPS");
     const prog = stampM ? progressOf(stampM) : null;
-    const pointsM = c.memberships.find(
-      (m) => m.program.type === "VISIT" || m.program.type === "POINTS",
-    );
-    const points = pointsM
-      ? deriveBalance(
-          pointsM.events.map((e) => ({
-            type: e.type as EventType,
-            amount: e.amount as unknown as number,
-          })),
-        )
-      : null;
     return {
       id: c.id,
       name: c.name,
       phone: c.phone ?? "—",
       code: c.code,
       stamps: prog ? (prog.isComplete ? "¡premio!" : `${prog.filled}/${prog.required}`) : "—",
-      points: points != null ? points.toLocaleString("es-AR") : "—",
     };
   });
 
@@ -58,7 +45,7 @@ export default async function ClientesPage() {
 
       {customers.length === 0 ? (
         <p className="py-16 text-center text-sm text-ink-2">
-          Todavía no hay clientes. Creá uno y empezá a darle sellos.
+          Todavía no hay clientes. Imprimí el QR del local (Ajustes) o creá uno a mano.
         </p>
       ) : (
         <>
@@ -78,10 +65,6 @@ export default async function ClientesPage() {
                     <span>
                       <span className="text-faint">Sellos </span>
                       {r.stamps}
-                    </span>
-                    <span>
-                      <span className="text-faint">Puntos </span>
-                      {r.points}
                     </span>
                   </div>
                   <Link
@@ -103,7 +86,6 @@ export default async function ClientesPage() {
                 <th className="border-b border-ink py-2.5">Cliente</th>
                 <th className="border-b border-ink py-2.5">Teléfono</th>
                 <th className="border-b border-ink py-2.5">Sellos</th>
-                <th className="border-b border-ink py-2.5">Puntos</th>
                 <th className="border-b border-ink py-2.5">Código</th>
                 <th className="border-b border-ink py-2.5">Tarjeta</th>
               </tr>
@@ -114,7 +96,6 @@ export default async function ClientesPage() {
                   <td className="border-b border-line py-3">{r.name}</td>
                   <td className="border-b border-line py-3 text-ink-2">{r.phone}</td>
                   <td className="border-b border-line py-3 font-mono">{r.stamps}</td>
-                  <td className="border-b border-line py-3 font-mono">{r.points}</td>
                   <td className="border-b border-line py-3 font-mono">#{r.code}</td>
                   <td className="border-b border-line py-3">
                     <Link

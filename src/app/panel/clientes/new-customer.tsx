@@ -61,7 +61,7 @@ export function NewCustomer({ programs }: { programs: ProgramOption[] }) {
           </div>
         ) : (
           <form ref={formRef} action={action} className="flex flex-col gap-5">
-            <Field label="Nombre" name="name" required placeholder="Sofía Martínez" />
+            <Field label="Nombre y apellido" name="name" required placeholder="Sofía Martínez" />
             <Field
               label="Teléfono"
               name="phone"

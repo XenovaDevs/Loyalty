@@ -6,7 +6,6 @@ import { buttonCls } from "@/components/ui";
 import {
   lookupCustomer,
   addStamp,
-  addPoints,
   redeemReward,
   useCoupon,
   revertCoupon,
@@ -145,7 +144,6 @@ function MembershipRow({
   pending: boolean;
   run: (fn: () => Promise<ScanResult>, note?: string) => void;
 }) {
-  const [pts, setPts] = useState(10);
   const isStamps = m.type === "STAMPS";
   const isCoupon = m.type === "COUPON";
 
@@ -161,11 +159,7 @@ function MembershipRow({
           <span className="font-mono text-sm font-bold text-spot">
             {m.used ? "usado" : "disponible"}
           </span>
-        ) : (
-          <span className="font-mono text-sm font-bold text-spot">
-            {m.points.toLocaleString("es-AR")} pts
-          </span>
-        )}
+        ) : null}
       </div>
 
       {isCoupon ? (
@@ -239,29 +233,7 @@ function MembershipRow({
             </button>
           </div>
         </>
-      ) : (
-        <div className="flex flex-wrap items-end gap-2.5">
-          <label className="block">
-            <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-faint">
-              Puntos a sumar
-            </span>
-            <input
-              type="number"
-              min={1}
-              value={pts}
-              onChange={(e) => setPts(Number(e.target.value))}
-              className="w-28 border-0 border-b border-ink bg-transparent py-1.5 font-mono text-base outline-none focus:border-spot"
-            />
-          </label>
-          <button
-            disabled={pending || pts <= 0}
-            onClick={() => run(() => addPoints(m.id, pts), `+${pts} puntos`)}
-            className={buttonCls("spot")}
-          >
-            + Sumar puntos
-          </button>
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }

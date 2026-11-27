@@ -1,31 +1,24 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { progressOf } from "@/lib/membership";
-import { deriveBalance, type EventType } from "@/lib/loyalty";
+import { parseMessages } from "@/lib/notify";
 import { StampCard } from "@/components/stamp-card";
-import { PointsCard } from "@/components/points-card";
 import { CouponCard } from "@/components/coupon-card";
-import { CheckInButton } from "./checkin-button";
 import { NotifyToggle } from "./notify-toggle";
-import { ProximityNotifier, type NotifyPromo } from "./proximity-notifier";
+import { ProximityNotifier } from "./proximity-notifier";
+import { QrBanner } from "./qr-banner";
 import { AutoRefresh } from "@/components/auto-refresh";
-
-function parseMessages(raw: string | null): string[] {
-  if (!raw) return [];
-  try {
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr.filter((s) => typeof s === "string") : [];
-  } catch {
-    return [];
-  }
-}
 
 export default async function CustomerCardPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ code: string }>;
+  // ?r= resultado del escaneo del QR del local (lo pone /q/[token]).
+  searchParams: Promise<{ r?: string; nuevo?: string }>;
 }) {
   const { code } = await params;
+  const { r, nuevo } = await searchParams;
   const customer = await prisma.customer.findUnique({
     where: { code: code.toUpperCase() },
     include: {
@@ -47,45 +40,19 @@ export default async function CustomerCardPage({
   );
   const prog = stampMembership ? progressOf(stampMembership) : null;
 
-  // Programa de visitas (check-in por cercanía).
-  const visitMembership = memberships.find(
-    (m) => m.program.type === "VISIT",
-  );
-  const visitPoints = visitMembership
-    ? deriveBalance(
-        visitMembership.events.map((e) => ({
-          type: e.type as EventType,
-          amount: e.amount as unknown as number,
-        })),
-      )
-    : 0;
-  const checkinEnabled =
-    visitMembership != null &&
-    customer.business.latitude != null &&
-    customer.business.longitude != null;
-
   // Cupones del cliente.
   const couponMemberships = memberships.filter(
     (m) => m.program.type === "COUPON",
   );
 
-  // Programas con aviso de cercanía activo (radio/horario con fallback al comercio).
+  // Aviso de cercanía del local (franja horaria con fallback al horario del local).
   const b = customer.business;
-  const hasGeo = b.latitude != null && b.longitude != null;
-  const notifyPromos: NotifyPromo[] = hasGeo
-    ? memberships
-        .map((m) => m.program)
-        .filter((p) => p.notifyEnabled)
-        .map((p) => ({
-          id: p.id,
-          name: p.name,
-          messages: parseMessages(p.notifyMessages),
-          radiusM: p.notifyRadiusM ?? b.checkinRadiusM,
-          startHour: p.notifyStartHour ?? b.openHour,
-          endHour: p.notifyEndHour ?? b.closeHour,
-        }))
-        .filter((p) => p.messages.length > 0)
-    : [];
+  const notifyMessages = parseMessages(b.notifyMessages);
+  const notifyOn =
+    b.notifyEnabled &&
+    b.latitude != null &&
+    b.longitude != null &&
+    notifyMessages.length > 0;
 
   const firstName = customer.name.split(" ")[0];
   const initial = customer.business.name.charAt(0).toUpperCase();
@@ -93,6 +60,7 @@ export default async function CustomerCardPage({
   return (
     <main className="relative z-10 mx-auto flex min-h-dvh max-w-md flex-col px-6 py-10">
       <AutoRefresh intervalMs={10000} />
+      <QrBanner status={r} nuevo={nuevo === "1"} />
       <header className="mb-5 flex items-center gap-3 border-b border-line pb-4">
         <div className="grid size-9 place-items-center rounded-[var(--radius)] border border-ink font-display text-lg font-semibold">
           {initial}
@@ -134,36 +102,10 @@ export default async function CustomerCardPage({
         />
       )}
 
-      {visitMembership && (
-        <div className={stampMembership ? "mt-6" : ""}>
-          <PointsCard
-            brandName={customer.business.name}
-            brandSub={customer.business.city ?? undefined}
-            logoText={initial}
-            reward={visitMembership.program.rewardText}
-            points={visitPoints}
-            who={customer.name}
-            code={`#${customer.code}`}
-          />
-        </div>
-      )}
-
-      {checkinEnabled && (
-        <CheckInButton
-          code={customer.code}
-          brandName={customer.business.name}
-          lat={customer.business.latitude!}
-          lng={customer.business.longitude!}
-          radius={customer.business.checkinRadiusM}
-          openHour={customer.business.openHour}
-          closeHour={customer.business.closeHour}
-        />
-      )}
-
       {couponMemberships.map((m) => (
         <div
           key={m.id}
-          className={stampMembership || visitMembership ? "mt-6" : ""}
+          className={stampMembership ? "mt-6" : ""}
         >
           <CouponCard
             brandName={customer.business.name}
@@ -178,19 +120,24 @@ export default async function CustomerCardPage({
         </div>
       ))}
 
-      {(stampMembership || visitMembership || couponMemberships.length > 0) && (
+      {(stampMembership || couponMemberships.length > 0) && (
         <NotifyToggle code={customer.code} />
       )}
 
-      {hasGeo && notifyPromos.length > 0 && (
+      {notifyOn && (
         <ProximityNotifier
+          businessId={b.id}
+          title={b.name}
           lat={b.latitude!}
           lng={b.longitude!}
-          promos={notifyPromos}
+          radiusM={b.notifyRadiusM}
+          startHour={b.notifyStartHour ?? b.openHour}
+          endHour={b.notifyEndHour ?? b.closeHour}
+          messages={notifyMessages}
         />
       )}
 
-      {!stampMembership && !visitMembership && couponMemberships.length === 0 && (
+      {!stampMembership && couponMemberships.length === 0 && (
         <p className="border border-line p-4 text-sm text-ink-2">
           Todavía no estás inscripto en ningún programa.
         </p>

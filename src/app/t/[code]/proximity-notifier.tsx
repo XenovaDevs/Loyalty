@@ -3,43 +3,43 @@
 import { useEffect, useRef, useState } from "react";
 import { distanceMeters, isOpenNow } from "@/lib/geo";
 
-export type NotifyPromo = {
-  id: string;
-  name: string;
-  messages: string[];
+type Props = {
+  businessId: string;
+  title: string; // nombre del local (título de la notificación)
+  lat: number;
+  lng: number;
   radiusM: number;
   startHour: number | null;
   endHour: number | null;
+  messages: string[];
 };
 
-type Props = {
-  lat: number;
-  lng: number;
-  promos: NotifyPromo[];
-};
-
-// Tiempo mínimo entre avisos de un mismo programa (evita spam del navegador).
+// Tiempo mínimo entre avisos del local (evita spam del navegador).
 const COOLDOWN_MS = 2 * 60 * 60 * 1000;
 
-function lastFired(id: string): number {
-  const v = localStorage.getItem(`notif:${id}`);
-  return v ? Number(v) : 0;
-}
-
 /**
- * Vigila la ubicación del cliente y, cuando entra en el radio de un programa
- * (dentro del horario permitido), dispara una notificación con un mensaje al
- * azar. Funciona con la tarjeta abierta, aunque sea en segundo plano.
+ * Aviso de cercanía del local: vigila la ubicación del cliente y, cuando entra
+ * en el radio (dentro de la franja horaria), muestra una notificación con un
+ * mensaje al azar. Funciona con la tarjeta abierta, aunque sea en segundo plano.
  */
-export function ProximityNotifier({ lat, lng, promos }: Props) {
+export function ProximityNotifier({
+  businessId,
+  title,
+  lat,
+  lng,
+  radiusM,
+  startHour,
+  endHour,
+  messages,
+}: Props) {
   const [watching, setWatching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const watchId = useRef<number | null>(null);
+  const storageKey = `notif:${businessId}`;
 
   useEffect(() => {
     return () => {
-      if (watchId.current != null)
-        navigator.geolocation.clearWatch(watchId.current);
+      if (watchId.current != null) navigator.geolocation.clearWatch(watchId.current);
     };
   }, []);
 
@@ -57,39 +57,27 @@ export function ProximityNotifier({ lat, lng, promos }: Props) {
     setWatching(true);
     watchId.current = navigator.geolocation.watchPosition(
       (pos) => {
-        const dist = distanceMeters(
-          pos.coords.latitude,
-          pos.coords.longitude,
-          lat,
-          lng,
-        );
+        const dist = distanceMeters(pos.coords.latitude, pos.coords.longitude, lat, lng);
         const now = Date.now();
-        for (const promo of promos) {
-          if (dist > promo.radiusM) continue;
-          if (!isOpenNow(promo.startHour, promo.endHour)) continue;
-          if (now - lastFired(promo.id) < COOLDOWN_MS) continue;
-          if (promo.messages.length === 0) continue;
+        if (dist > radiusM) return;
+        if (!isOpenNow(startHour, endHour)) return;
+        if (now - Number(localStorage.getItem(storageKey) ?? 0) < COOLDOWN_MS) return;
+        if (messages.length === 0) return;
 
-          const msg =
-            promo.messages[Math.floor(Math.random() * promo.messages.length)];
-          localStorage.setItem(`notif:${promo.id}`, String(now));
-          new Notification(promo.name, { body: msg });
-        }
+        const msg = messages[Math.floor(Math.random() * messages.length)];
+        localStorage.setItem(storageKey, String(now));
+        new Notification(title, { body: msg });
       },
       () => setError("No pudimos acceder a tu ubicación."),
       { enableHighAccuracy: true, maximumAge: 0 },
     );
   }
 
-  if (promos.length === 0) return null;
-
   return (
     <div className="mt-4 border border-line p-4">
-      <p className="font-display text-base font-semibold">
-        Avisos de cercanía
-      </p>
+      <p className="font-display text-base font-semibold">Avisos de cercanía</p>
       <p className="mb-3 mt-0.5 text-[13px] text-ink-2">
-        Te avisamos cuando pases cerca y haya algo para vos.
+        Te avisamos cuando pases cerca del local.
       </p>
       <button
         onClick={enable}

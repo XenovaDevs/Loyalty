@@ -9,6 +9,7 @@ import {
   isGoogleMapsHost,
   type Coords,
 } from "@/lib/maps";
+import { newJoinToken } from "@/lib/ids";
 
 export type FormResult = { error?: string; ok?: boolean } | undefined;
 
@@ -102,7 +103,6 @@ export async function updateLocation(
 
   let latitude = num("latitude");
   let longitude = num("longitude");
-  const radius = num("checkinRadiusM") ?? 120;
   const openHour = num("openHour");
   const closeHour = num("closeHour");
 
@@ -131,12 +131,85 @@ export async function updateLocation(
       latitude,
       longitude,
       mapsUrl,
-      checkinRadiusM: Math.max(20, Math.min(2000, radius)),
       openHour: openHour != null ? Math.max(0, Math.min(23, openHour)) : null,
       closeHour: closeHour != null ? Math.max(0, Math.min(23, closeHour)) : null,
     },
   });
 
+  revalidatePath("/panel/ajustes");
+  return { ok: true };
+}
+
+/** Config del aviso de cercanía del local. */
+export async function updateNotify(
+  _prev: FormResult,
+  formData: FormData,
+): Promise<FormResult> {
+  const { businessId, user } = await requireBusiness();
+  if (!isOwner(user)) return { error: "Solo el dueño puede cambiar los ajustes." };
+
+  const notifyEnabled = formData.get("notifyEnabled") != null;
+
+  // Mensajes: un texto por línea → array JSON. Se elige uno al azar en cada aviso.
+  const messages = String(formData.get("notifyMessages") ?? "")
+    .split("\n")
+    .map((s) => s.trim().slice(0, 200))
+    .filter(Boolean)
+    .slice(0, 20);
+  if (notifyEnabled && messages.length === 0)
+    return { error: "Agregá al menos un mensaje para el aviso." };
+
+  const radius = Number(String(formData.get("notifyRadiusM") ?? "").trim() || 120);
+  if (!Number.isInteger(radius) || radius < 20 || radius > 5000)
+    return { error: "El radio del aviso debe estar entre 20 y 5000 metros." };
+
+  const parseHour = (key: string): number | null | "bad" => {
+    const s = String(formData.get(key) ?? "").trim();
+    if (!s) return null;
+    const n = Number(s);
+    return Number.isInteger(n) && n >= 0 && n <= 23 ? n : "bad";
+  };
+  const notifyStartHour = parseHour("notifyStartHour");
+  const notifyEndHour = parseHour("notifyEndHour");
+  if (notifyStartHour === "bad" || notifyEndHour === "bad")
+    return { error: "El horario debe ser una hora entre 0 y 23." };
+  if ((notifyStartHour == null) !== (notifyEndHour == null))
+    return { error: "Completá las dos horas de la franja (o ninguna)." };
+
+  if (notifyEnabled) {
+    const b = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { latitude: true, longitude: true },
+    });
+    if (b?.latitude == null || b?.longitude == null)
+      return { error: "Primero cargá la ubicación del local (arriba)." };
+  }
+
+  await prisma.business.update({
+    where: { id: businessId },
+    data: {
+      notifyEnabled,
+      notifyMessages: messages.length ? JSON.stringify(messages) : null,
+      notifyRadiusM: radius,
+      notifyStartHour,
+      notifyEndHour,
+    },
+  });
+  revalidatePath("/panel/ajustes");
+  return { ok: true };
+}
+
+/**
+ * Genera un QR nuevo para el local: el anterior deja de funcionar (por si se
+ * filtró una foto). Las tarjetas y sellos de los clientes no cambian.
+ */
+export async function regenerateJoinToken(): Promise<FormResult> {
+  const { businessId, user } = await requireBusiness();
+  if (!isOwner(user)) return { error: "Solo el dueño puede cambiar el QR." };
+  await prisma.business.update({
+    where: { id: businessId },
+    data: { joinToken: newJoinToken() },
+  });
   revalidatePath("/panel/ajustes");
   return { ok: true };
 }

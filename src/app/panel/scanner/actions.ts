@@ -1,23 +1,21 @@
 "use server";
 
-import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireBusiness } from "@/lib/tenant";
 import { withMembershipLock } from "@/lib/locks";
 import { deriveBalance, stampProgress, type EventType } from "@/lib/loyalty";
 import { sendPushToCustomer } from "@/lib/push";
+import { addStamps, notifyRewardReady } from "@/lib/stamps";
 
 export type ScanMembership = {
   id: string;
-  type: string; // STAMPS | VISIT | POINTS | COUPON
+  type: string; // STAMPS | COUPON
   programName: string;
   reward: string;
   // sellos
   filled: number;
   required: number;
   isComplete: boolean;
-  // puntos
-  points: number;
   // cupón
   couponCode: string | null;
   used: boolean;
@@ -54,7 +52,6 @@ function mapMembership(m: DbMembership): ScanMembership {
     filled: sp.filled,
     required: sp.required,
     isComplete: sp.isComplete,
-    points: balance,
     couponCode: m.program.couponCode,
     used: events.some((e) => e.type === "REDEEM"),
   };
@@ -94,7 +91,6 @@ export async function lookupCustomer(codeRaw: unknown): Promise<ScanResult> {
 // Límites de lo que un empleado puede cargar en una sola operación. La UI solo
 // manda +1/+2 sellos, pero un server action se puede llamar con cualquier valor.
 const MAX_STAMPS_PER_OP = 5;
-const MAX_POINTS_PER_OP = 10_000;
 
 async function assertMembership(businessId: string, membershipId: unknown) {
   if (typeof membershipId !== "string" || membershipId.length > 64)
@@ -116,50 +112,17 @@ export async function addStamp(membershipId: string, qty: unknown = 1): Promise<
   if (typeof qty !== "number" || !Number.isInteger(qty) || qty < 1 || qty > MAX_STAMPS_PER_OP)
     return resultForCustomer(m.customerId);
 
-  const required = m.program.stampsRequired ?? 10;
-  const crossedReward = await withMembershipLock(m.id, async (tx) => {
-    const prior = await tx.loyaltyEvent.findMany({ where: { membershipId: m.id } });
-    const before = deriveBalance(
-      prior.map((e) => ({ type: e.type as EventType, amount: e.amount as unknown as number })),
-    );
-    await tx.loyaltyEvent.create({
-      data: { membershipId: m.id, type: "STAMP", amount: qty, staffUserId: user.id },
-    });
-    // Si este sello cruzó un múltiplo de `required`, completó un premio nuevo
-    // (robusto para qty > 1, ej. el botón "+2" que va de 8 a 10).
-    const total = before + qty;
-    return Math.floor(total / required) > Math.floor(Math.max(0, before) / required);
+  // Sin tope diario: el personal es de confianza (el límite es para el QR).
+  const r = await addStamps({
+    membershipId: m.id,
+    required: m.program.stampsRequired ?? 10,
+    qty,
+    staffUserId: user.id,
   });
-
-  if (crossedReward) {
-    // Después de responder: la caja no espera a los servidores de push.
-    after(() =>
-      sendPushToCustomer(m.customerId, {
-        title: "¡Tu premio está listo! 🎁",
-        body: m.program.rewardText,
-        url: `/t/${m.customer.code}`,
-      }).catch(() => {}),
-    );
+  if (r.added && r.crossedReward) {
+    notifyRewardReady(m.customerId, m.customer.code, m.program.rewardText);
   }
 
-  return resultForCustomer(m.customerId);
-}
-
-export async function addPoints(
-  membershipId: string,
-  amount: unknown,
-): Promise<ScanResult> {
-  const { businessId, user } = await requireBusiness();
-  const m = await assertMembership(businessId, membershipId);
-  // Puntos solo para programas de puntos/visita, nunca sellos ni cupones.
-  if (m.program.type === "STAMPS" || m.program.type === "COUPON")
-    return resultForCustomer(m.customerId);
-  const pts = Math.round(Number(amount));
-  if (!Number.isFinite(pts) || pts <= 0 || pts > MAX_POINTS_PER_OP)
-    return resultForCustomer(m.customerId);
-  await prisma.loyaltyEvent.create({
-    data: { membershipId: m.id, type: "POINTS", amount: pts, staffUserId: user.id },
-  });
   return resultForCustomer(m.customerId);
 }
 

@@ -3,13 +3,11 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createProgram, type FormResult } from "./actions";
 import { Field, buttonCls } from "@/components/ui";
-import { NotifyFields } from "./notify-fields";
 
-type ProgramKind = "STAMPS" | "VISIT" | "COUPON";
+type ProgramKind = "STAMPS" | "COUPON";
 
 const TABS: { key: ProgramKind; label: string }[] = [
   { key: "STAMPS", label: "Sellos" },
-  { key: "VISIT", label: "Visita" },
   { key: "COUPON", label: "Cupón" },
 ];
 
@@ -50,7 +48,7 @@ export function NewProgram() {
           </button>
         </div>
 
-        <div className="mb-5 grid grid-cols-3 border border-ink">
+        <div className="mb-5 grid grid-cols-2 border border-ink">
           {TABS.map((t, i) => (
             <button
               key={t.key}
@@ -71,51 +69,30 @@ export function NewProgram() {
             label="Nombre interno"
             name="name"
             required
-            placeholder={
-              type === "STAMPS"
-                ? "Tarjeta pote"
-                : type === "VISIT"
-                  ? "Puntos por visita"
-                  : "Cupón bienvenida"
-            }
+            placeholder={type === "STAMPS" ? "Tarjeta pote" : "Cupón bienvenida"}
           />
           <Field
             label={type === "COUPON" ? "Descripción (lo ve el cliente)" : "Premio / descripción"}
             name="rewardText"
             required
             placeholder={
-              type === "STAMPS"
-                ? "Comprá 10, el 11 es nuestro"
-                : type === "VISIT"
-                  ? "Pasá y sumá puntos en cada visita"
-                  : "25% OFF en tu primera compra"
+              type === "STAMPS" ? "Comprá 10, el 11 es nuestro" : "25% OFF en tu primera compra"
             }
           />
 
           {type === "STAMPS" && (
-            <Field
-              label="Sellos para el premio"
-              name="stampsRequired"
-              type="number"
-              min={2}
-              max={20}
-              defaultValue={10}
-            />
-          )}
-
-          {type === "VISIT" && (
             <>
               <Field
-                label="Puntos por visita"
-                name="pointsPerVisit"
+                label="Sellos para el premio"
+                name="stampsRequired"
                 type="number"
-                min={1}
-                max={1000}
+                min={2}
+                max={20}
                 defaultValue={10}
               />
               <p className="-mt-2 text-[12px] text-faint">
-                El cliente suma estos puntos al abrir su tarjeta dentro del local
-                (1 vez por día). Configurá la ubicación en Ajustes.
+                El cliente suma 1 sello por día escaneando el QR del local
+                (Ajustes). Solo puede haber una tarjeta de sellos activa.
               </p>
             </>
           )}
@@ -138,8 +115,6 @@ export function NewProgram() {
               </p>
             </>
           )}
-
-          <NotifyFields />
 
           {state?.error && <p className="text-sm text-spot">{state.error}</p>}
           <button disabled={pending} className={`${buttonCls("spot")} mt-1`}>

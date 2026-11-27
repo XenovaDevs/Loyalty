@@ -5,17 +5,6 @@ import { NewProgram } from "./new-program";
 import { ToggleButton } from "./toggle-button";
 import { EditProgram } from "./edit-program";
 
-/** Deserializa el array JSON de mensajes del aviso (tolerante a datos inválidos). */
-function parseMessages(raw: string | null): string[] {
-  if (!raw) return [];
-  try {
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr.filter((s) => typeof s === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
 export default async function ProgramasPage() {
   const { businessId, user } = await requireBusiness();
   // Crear/editar/pausar programas es solo del dueño (las acciones también lo exigen).
@@ -53,11 +42,9 @@ export default async function ProgramasPage() {
                 </div>
                 <p className="mt-0.5 text-sm text-ink-2">{p.rewardText}</p>
                 <p className="mt-1 font-mono text-[11px] text-faint">
-                  {p.type === "VISIT"
-                    ? `visita · ${p.pointsPerVisit} pts/día`
-                    : p.type === "COUPON"
-                      ? `cupón · ${p.couponCode ?? "sin código"}${p.couponExpiresAt ? ` · vence ${p.couponExpiresAt.toLocaleDateString("es-AR")}` : ""}`
-                      : `${p.stampsRequired} sellos`}{" "}
+                  {p.type === "COUPON"
+                    ? `cupón · ${p.couponCode ?? "sin código"}${p.couponExpiresAt ? ` · vence ${p.couponExpiresAt.toLocaleDateString("es-AR")}` : ""}`
+                    : `${p.stampsRequired} sellos`}{" "}
                   · {p._count.memberships} clientes
                 </p>
               </div>
@@ -69,18 +56,12 @@ export default async function ProgramasPage() {
                   name={p.name}
                   rewardText={p.rewardText}
                   stampsRequired={p.stampsRequired}
-                  pointsPerVisit={p.pointsPerVisit}
                   couponCode={p.couponCode}
                   couponExpiresAt={
                     p.couponExpiresAt
                       ? p.couponExpiresAt.toISOString().slice(0, 10)
                       : null
                   }
-                  notifyEnabled={p.notifyEnabled}
-                  notifyMessages={parseMessages(p.notifyMessages)}
-                  notifyRadiusM={p.notifyRadiusM}
-                  notifyStartHour={p.notifyStartHour}
-                  notifyEndHour={p.notifyEndHour}
                 />
                 <ToggleButton id={p.id} active={p.active} />
               </div>

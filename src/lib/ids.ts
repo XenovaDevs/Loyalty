@@ -1,6 +1,16 @@
 // Utilidades de identificadores legibles.
 
-import { randomInt } from "node:crypto";
+import { randomBytes, randomInt } from "node:crypto";
+
+// Token del QR del local (/q/[token]): 128 bits aleatorios en hex. Mismo
+// formato que el default de la base (gen_random_uuid sin guiones).
+export function newJoinToken(): string {
+  return randomBytes(16).toString("hex");
+}
+
+export function isJoinToken(t: unknown): t is string {
+  return typeof t === "string" && /^[A-Za-z0-9]{16,64}$/.test(t);
+}
 
 export function slugify(input: string): string {
   return input
