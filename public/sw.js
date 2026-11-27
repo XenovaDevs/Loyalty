@@ -9,6 +9,9 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
+      // Logo de Loyalty (ícono grande) y silueta para la barra de estado de Android.
+      icon: "/notification-icon.png",
+      badge: "/notification-badge.png",
       data: { url: data.url },
     }),
   );

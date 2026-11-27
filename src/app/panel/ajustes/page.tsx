@@ -18,11 +18,28 @@ async function publicBaseUrl(): Promise<string> {
   return `${proto}://${host}`;
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
+/**
+ * Sección de ajustes. En celular: título arriba y contenido abajo. En PC (lg):
+ * dos columnas, título + explicación a la izquierda y el formulario a la
+ * derecha (antes todo quedaba en una columna angosta pegada a la izquierda).
+ */
+function Section({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
   return (
-    <h2 className="mt-10 border-b border-line pb-2 font-display text-xl font-semibold">
-      {children}
-    </h2>
+    <section className="grid gap-5 border-b border-line py-8 lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] lg:gap-12">
+      <div>
+        <h2 className="font-display text-xl font-semibold">{title}</h2>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-faint">{description}</p>
+      </div>
+      <div className="min-w-0">{children}</div>
+    </section>
   );
 }
 
@@ -42,33 +59,45 @@ export default async function AjustesPage() {
     <>
       <PageHeader kicker="Comercio" title="Ajustes" />
 
-      <SectionTitle>QR del local</SectionTitle>
-      <QrSection
-        url={qrUrl}
-        svg={svg}
-        pngDataUrl={png}
-        fileBase={b.slug}
-        owner={isOwner(user)}
-      />
+      <Section
+        title="QR del local"
+        description="Un solo QR para todo el local: sirve para el alta y para sumar sellos."
+      >
+        <QrSection
+          url={qrUrl}
+          svg={svg}
+          pngDataUrl={png}
+          fileBase={b.slug}
+          owner={isOwner(user)}
+        />
+      </Section>
 
-      <SectionTitle>Ubicación y horario</SectionTitle>
-      <LocationForm
-        latitude={b.latitude}
-        longitude={b.longitude}
-        mapsUrl={b.mapsUrl}
-        openHour={b.openHour}
-        closeHour={b.closeHour}
-      />
+      <Section
+        title="Ubicación y horario"
+        description="Con el local cerrado no se suman sellos por QR. La ubicación es para el aviso de cercanía."
+      >
+        <LocationForm
+          latitude={b.latitude}
+          longitude={b.longitude}
+          mapsUrl={b.mapsUrl}
+          openHour={b.openHour}
+          closeHour={b.closeHour}
+        />
+      </Section>
 
-      <SectionTitle>Aviso de cercanía</SectionTitle>
-      <NotifyForm
-        enabled={b.notifyEnabled}
-        messages={parseMessages(b.notifyMessages)}
-        radiusM={b.notifyRadiusM}
-        startHour={b.notifyStartHour}
-        endHour={b.notifyEndHour}
-        hasLocation={b.latitude != null && b.longitude != null}
-      />
+      <Section
+        title="Aviso de cercanía"
+        description="Una notificación cuando un cliente con la tarjeta abierta pasa cerca del local."
+      >
+        <NotifyForm
+          enabled={b.notifyEnabled}
+          messages={parseMessages(b.notifyMessages)}
+          radiusM={b.notifyRadiusM}
+          startHour={b.notifyStartHour}
+          endHour={b.notifyEndHour}
+          hasLocation={b.latitude != null && b.longitude != null}
+        />
+      </Section>
     </>
   );
 }

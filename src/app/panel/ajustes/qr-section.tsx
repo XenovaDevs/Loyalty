@@ -30,35 +30,37 @@ export function QrSection({ url, svg, pngDataUrl, fileBase, owner }: Props) {
   }
 
   return (
-    <div className="mt-6 flex max-w-md flex-col gap-4">
-      <p className="text-sm text-ink-2">
-        Imprimilo y ponelo en la caja. La primera vez el cliente crea su tarjeta
-        con nombre, apellido y teléfono; después, cada vez que lo escanea suma un
-        sello (uno por día, con el local abierto).
-      </p>
+    <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-8">
       <div
-        className="mx-auto w-full max-w-[260px] border border-ink bg-white p-3 [&_svg]:h-auto [&_svg]:w-full"
+        className="mx-auto w-full max-w-[240px] shrink-0 border border-ink bg-white p-3 sm:mx-0 [&_svg]:h-auto [&_svg]:w-full"
         dangerouslySetInnerHTML={{ __html: svg }}
         aria-label="QR del local"
       />
-      <p className="break-all text-center font-mono text-[11px] text-faint">{url}</p>
-      <div className="flex flex-wrap gap-2.5">
-        <a href={pngDataUrl} download={`${fileBase}-qr.png`} className={buttonCls("spot")}>
-          Descargar PNG
-        </a>
-        <a href={svgHref} download={`${fileBase}-qr.svg`} className={buttonCls("ghost")}>
-          Descargar SVG
-        </a>
-        {owner && (
-          <button
-            type="button"
-            onClick={() => setAsk(true)}
-            disabled={pending}
-            className={buttonCls("ghost")}
-          >
-            Generar QR nuevo
-          </button>
-        )}
+      <div className="flex min-w-0 flex-col gap-4">
+        <p className="text-sm leading-relaxed text-ink-2">
+          Imprimilo y ponelo en la caja. La primera vez el cliente crea su tarjeta
+          con nombre, apellido y teléfono; después, cada vez que lo escanea suma un
+          sello (uno por día, con el local abierto).
+        </p>
+        <p className="break-all font-mono text-[11px] text-faint">{url}</p>
+        <div className="flex flex-wrap gap-2.5">
+          <a href={pngDataUrl} download={`${fileBase}-qr.png`} className={buttonCls("spot")}>
+            Descargar PNG
+          </a>
+          <a href={svgHref} download={`${fileBase}-qr.svg`} className={buttonCls("ghost")}>
+            Descargar SVG
+          </a>
+          {owner && (
+            <button
+              type="button"
+              onClick={() => setAsk(true)}
+              disabled={pending}
+              className={buttonCls("ghost")}
+            >
+              Generar QR nuevo
+            </button>
+          )}
+        </div>
       </div>
 
       <ConfirmDialog

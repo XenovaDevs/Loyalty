@@ -66,7 +66,11 @@ export function ProximityNotifier({
 
         const msg = messages[Math.floor(Math.random() * messages.length)];
         localStorage.setItem(storageKey, String(now));
-        new Notification(title, { body: msg });
+        new Notification(title, {
+          body: msg,
+          icon: "/notification-icon.png",
+          badge: "/notification-badge.png",
+        });
       },
       () => setError("No pudimos acceder a tu ubicación."),
       { enableHighAccuracy: true, maximumAge: 0 },

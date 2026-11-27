@@ -30,7 +30,7 @@ export function NotifyForm(initial: Props) {
   const [enabled, setEnabled] = useState(initial.enabled);
 
   return (
-    <form action={action} className="mt-6 flex max-w-md flex-col gap-5">
+    <form action={action} className="flex max-w-xl flex-col gap-5">
       <label className="flex cursor-pointer items-center gap-2.5">
         <input
           type="checkbox"
