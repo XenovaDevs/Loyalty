@@ -26,6 +26,13 @@ export function NotifyToggle({ code }: { code: string }) {
     const ok = "serviceWorker" in navigator && "PushManager" in window;
     setSupported(ok);
     if (!ok) return;
+    // Si ya hay service worker, pedirle que se actualice: el registro solo
+    // ocurre al activar los avisos, y un celular podía quedarse con un sw.js
+    // viejo (ej. sin el logo en las notificaciones).
+    navigator.serviceWorker
+      .getRegistration()
+      .then((reg) => reg?.update())
+      .catch(() => {});
     navigator.serviceWorker.ready
       .then((reg) => reg.pushManager.getSubscription())
       .then(async (sub) => {
